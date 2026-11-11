@@ -1,5 +1,6 @@
-# econometrics-tutorials
-Interactive Quarto tutorials for an introductory econometrics course.
+# Econometric tutorials
+
+Interactive Quarto tutorials for an introductory econometrics course for spanish-speaking students.
 
 | Folder | Contents |
 | --- | --- |
@@ -33,19 +34,17 @@ Data paths are relative to each document's folder. Worksheets contain blanks to 
 
 ## License
 
-Copyright © 2026 Nicolás González Raposo.
+Copyright © 2026 Nicolás González-Raposo.
 
-- **Original R code**, including R code blocks in the `.qmd` files, is licensed under the [MIT License](LICENSE).
-- **Original teaching text and original illustrations**, including the prose in the `.qmd` files and this README, are licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](LICENSE-CC-BY-4.0.txt).
+- **Original R code**, is licensed under the [MIT License](LICENSE).
+- **Original teaching text and illustrations**, are licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](LICENSE-CC-BY-4.0.txt).
 
-These licenses cover only the author's original contributions. Third-party datasets, the CEP data dictionary, textbook images in `images/`, and third-party software retain their respective rights and terms.
-
-When sharing or adapting the teaching material, credit the author, link to this repository and the CC BY 4.0 license, and indicate any changes.
+These licenses cover only the author's original contributions. Third-party datasets, the CEP data dictionary, and third-party software retain their respective rights and terms.
 
 ## Contact and attribution
 
 For questions about the tutorials or their implementation:
 
-**Nicolás González-Raposo** — [GitHub](https://github.com/nicolasgonzalezr)
+**Nicolás González-Raposo** — [nicgonzalezr\@udd.cl](mailto:nicgonzalezr@udd.cl)
 
 If you use or adapt this material, please credit the author and link to this repository.
