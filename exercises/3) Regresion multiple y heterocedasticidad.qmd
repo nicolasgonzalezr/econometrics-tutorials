@@ -501,6 +501,8 @@ Ahora vamos a estimar los errores estándar de forma empírica con el método de
 
 Bootstrap es una forma empírica de generar una sampling distribution a partir de la muestra observada. Se basa en hacer simulaciones a partir de la muestra.
 
+Nota: El "wild bootstrap" permite heterocedasticidad manteniendo fijos los predictores. Para esta instancia usaremos el bootstrap no paramétrico conocido como "cases o pairs bootstrap", que también permite heterocedasticidad bajo muestreo independiente de observaciones.
+
 **1)** Comenzamos definiendo el número de muestreos del bootstrap y creando una matriz vacía con suficientes filas para nuestras iteraciones y suficientes columnas para todos los coeficientes de nuestro modelo_multiple (**1 punto**).
 
 -   Asignar numero de iteraciones a "iteraciones_bootstrap"

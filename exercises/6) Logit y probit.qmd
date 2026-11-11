@@ -129,7 +129,7 @@ probabilidad <- plogis(log_odds)
 odds_data <- data.frame(probabilidad = probabilidad, log_odds = log_odds)
 
 ggplot(data = odds_data, aes(x = log_odds, y = probabilidad)) +
-  geom_line(color="cyan4", linewidth = 1)+
+  geom_line(color="cyan4", linewidth= 1)+
   labs(x = "Log-Odds", y = "Probabilidad") +
   theme_minimal() +
   ggtitle("CDF distribución logística")
@@ -269,7 +269,6 @@ log_odds_2 <- sum(logit_simple$coefficients * c(1,5))
 partial_effect <- plogis(log_odds_2) - plogis(log_odds_1)
 
 partial_effect
-
 ```
 
 **2)** Interpretar efecto parcial de creencias frente a la inmigración sobre la aprobación **(1 punto)**.
@@ -354,7 +353,6 @@ z_score <- sum(probit_simple$coefficients * c(1, 1))
 partial_effect <- dnorm(z_score) * probit_simple$coefficients["inmigracion"]
 
 partial_effect
-
 ```
 
 **2)** Interpretar efecto parcial de creencias frente a la inmigración sobre la aprobación **(1 punto)**.
@@ -371,6 +369,7 @@ $$
 **1)** Obtener el efecto parcial sobre aprobación para una persona que pasa de tener creencias en favor de la inmigración de nivel 1 a nivel 2. Asumir que inmigración es una variable discreta.
 
 ```{r}
+
 
 ```
 
@@ -446,7 +445,8 @@ Supongamos que tenemos razones para pensar que las creencias frente a la inmigra
 
 ```{r}
 
-logit_marginal <- glm(aprobacion ~ inmigracion + izquierda + edad_18 + mujer + urbano + inmigracion*urbano + I(inmigracion^2), family=binomial(link="logit"), data=cep)
+logit_marginal <- glm(aprobacion ~ inmigracion + I(inmigracion^2) + inmigracion*urbano + izquierda + edad_18 + mujer + urbano, family = binomial(link="logit"), data=cep)
+
 
 summary(logit_marginal)
 ```
@@ -481,12 +481,20 @@ $$
 
 ```{r}
 
-log_odds <- sum(logit_marginal$coefficients * c(1, 2, mean(cep$izquierda), mean(cep$edad_18), 0, 1, 2^2, 2))
+log_odds_2 <- sum(logit_marginal$coefficients * c(1, 2, 2^2, 1, mean(cep$izquierda), mean(cep$edad_18), 0, 2*1))
 
-partial_effect_2 <-  dlogis(log_odds) * (logit_marginal$coefficients["inmigracion"] + 2*logit_marginal$coefficients["I(inmigracion^2)"]*2 + logit_marginal$coefficients["inmigracion:urbano"]*1)
+partial_effect_2 <- dlogis(log_odds_2)*(logit_marginal$coefficients["inmigracion"] + 2*logit_marginal$coefficients["I(inmigracion^2)"]*2 + logit_marginal$coefficients["inmigracion:urbano"]*1)
 
-partial_effect_2
+log_odds_6 <- sum(logit_marginal$coefficients * c(1, 6, 6^2, 1, mean(cep$izquierda), mean(cep$edad_18), 0, 6*1))
+
+partial_effect_6 <- dlogis(log_odds_6)*(logit_marginal$coefficients["inmigracion"] + 2*logit_marginal$coefficients["I(inmigracion^2)"]*6 + logit_marginal$coefficients["inmigracion:urbano"]*1)
+
+print(partial_effect_2)
+
+print(partial_effect_6)
 ```
+
+**b)** Interpretar los efectos parciales obtenidos **(1 punto)**.
 
 ::: callout-note
 :::
@@ -520,13 +528,14 @@ $$
 \frac{\partial p(\textbf{x})}{\partial x_j} = g(\beta_0 + \mathbf{x}\boldsymbol{\beta})\frac{\beta_j}{x_j+1}
 $$
 
-Hay que tener cautela al interpretar un modelo logit o probit con un predictor logarítmico. Esto, ya que el cambio en el predictor $x_j$ tiene una interpretación en **porcentajes de cambio**, mientras que el efecto sobre la variable explicada tiene una interpretación de **puntos porcentuales**. Esto es, el cambio en el predictor es una multiplicación, mientras que el efecto sobre la variable explicada es una suma. Diriamos, por ejemplo, que la probabilidad de aprobar al presidente Boric crece en X puntos porcentuales ante un incremento de 1% en la escala de creencias frente a la inmigración.
+Hay que tener cautela al interpretar un modelo logit o probit con un predictor logarítmico. Esto, ya que el cambio en el predictor $x_j$ tiene una interpretación en **porcentajes de cambio**, mientras que el efecto sobre la variable explicada tiene una interpretación de **puntos porcentuales**. Esto es, el cambio en el predictor es una multiplicación, mientras que el efecto sobre la variable explicada es una suma. Diriamos, por ejemplo, que la probabilidad de aprobar al presidente Boric crece en X puntos porcentuales ante un incremento de 1% en la escala de creencias frente a la inmigración. Se puede transformar la interpretación de puntos porcentuales a porcentajes de cambio, en caso de estar interesados en estimar la elasticidad de y con respecto a x.
 
 Para un incremento de 1% en $x_j$, el cambio aproximado en probabilidad es $g(\beta_0 + \mathbf{x}\boldsymbol{\beta})\beta_j x_j/[100(x_j+1)]$. Multiplicar por 100 para expresarlo en puntos porcentuales.
 
 **2)** Calcular el cambio aproximado en la probabilidad de aprobación ante un incremento de 1% en inmigración de acuerdo con el modelo probit_elasticidad, para una persona con creencias de nivel 8 y con valores medianos en todas las demás variables.
 
 ```{r}
+
 
 ```
 
@@ -558,7 +567,6 @@ Asignar a "probit_multiple".
 probit_multiple <- glm(aprobacion ~ inmigracion + izquierda + edad_18 + mujer + urbano + urbano*inmigracion, family=binomial(link="probit"), data=cep)
 
 summary(probit_multiple)
-
 ```
 
 **2)** Crear nueva columna en el data frame "cep" con los valores predichos de probit_multiple. Tomar valores ajustados y redondear a cero decimales para obtener una predicción. Nombrar columna como "predicted".
@@ -703,18 +711,19 @@ Donde $\ell_{r}$ es la log-likelihood de nuestro modelo restringido. El estadís
 ```{r}
 
 probit_restringido <- glm(aprobacion ~ inmigracion + izquierda + urbano + urbano*inmigracion, family=binomial(link="probit"), data=cep)
-
 ```
 
 **2)** Calcular el likelihood ratio. Asignar a "LR".
 
 ```{r}
 
+
 ```
 
 **3)** Calcular significancia para una distribución chi-cuadrado con q grados de libertad. Imprimir significancia.
 
 ```{r}
+
 
 ```
 
@@ -769,7 +778,7 @@ for (i in min(cep$inmigracion):max(cep$inmigracion)) {
   
 }
 
-partial_df <- data.frame(inmigracion=rep(min(cep$inmigracion):max(cep$inmigracion), times=2), partial = c(partial_effects_rural, partial_effects_urbano), urbano=as.factor(rep(c(0, 1), each=10)))
+partial_df <- data.frame(inmigracion=rep(min(cep$inmigracion):max(cep$inmigracion), times=2), partial = c(partial_effects_rural, partial_effects_urbano), urbano=as.factor(c(rep(0, times=10), rep(1, times=10))))
 
 
 ggplot(data=partial_df, aes(x=inmigracion, y=partial, color=urbano))+
@@ -808,7 +817,7 @@ for (i in min(cep$inmigracion):(max(cep$inmigracion)-1)) {
   
 }
 
-partial_df <- data.frame(inmigracion=rep(min(cep$inmigracion):(max(cep$inmigracion)-1), times=2), partial = c(partial_effects_rural, partial_effects_urbano), urbano=as.factor(rep(c(0,1), each=9)))
+partial_df <- data.frame(inmigracion=rep(min(cep$inmigracion):(max(cep$inmigracion)-1), times=2), partial = c(partial_effects_rural, partial_effects_urbano), urbano=as.factor(c(rep(0, times=9), rep(1, times=9))))
 
 
 ggplot(data=partial_df, aes(x=inmigracion, y=partial, color=urbano))+
@@ -829,20 +838,20 @@ Los valores ajustados del modelo ya vienen transformados a probabilidades, por l
 
 ```{r}
 
-
 z_scores <- qnorm(probit_restringido$fitted.values)
-
 ```
 
 **2)** Calcular efecto parcial para el vector de puntajes z. Guardar como "partial_effects". Asumir que inmigración es continua. Ya que tenemos un vector de puntajes z, necesitamos también un vector de valores para urbano.
 
 ```{r}
 
+
 ```
 
 **3)** Tomar media de partial_effects. Guardar como "APE". Imprimir.
 
 ```{r}
+
 
 ```
 

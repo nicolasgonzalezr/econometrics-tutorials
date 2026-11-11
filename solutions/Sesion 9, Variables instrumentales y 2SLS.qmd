@@ -10,7 +10,7 @@ editor_options:
 
 ## Instrucciones
 
-Responder al siguiente caso completando cada una de las preguntas con los códigos y las justificaciones solicitadas. Los scripts con sus respuestas deben ser cargados al repositorio del curso para la evaluación. El nombre del archivo debe ir en el formato "tarea_9_nombre_apellido.qmd". Los archivos deben ser cargados hasta el día viernes 27 de junio. Cada día de atraso en la entrega implicará un descuento de 1 décima en la nota de la tarea.
+Responder al siguiente caso completando cada una de las preguntas con los códigos y las justificaciones solicitadas. Los scripts con sus respuestas deben ser cargados al repositorio del curso para la evaluación. El nombre del archivo debe ir en el formato "tarea_8_nombre_apellido.qmd". Los archivos deben ser cargados hasta el día viernes 27 de junio. Cada día de atraso en la entrega implicará un descuento de 1 décima en la nota de la tarea.
 
 #### Cargar librerias al entorno de trabajo
 
@@ -40,7 +40,9 @@ library(wooldridge)
 library(ivreg)
 ```
 
-## Motivación IV: Sesgo de variable omitida
+## I. Variables instrumentales auxiliares
+
+### Motivación IV: Sesgo de variable omitida
 
 La estimación con el uso de variables instrumentales puede ser útil frente a un problema de endogeneidad en nuestro modelo. Esto es, que nuestra variable de interés este correlacionada con el error de la regresión--i.e., que alguna variable relevante para nuestro modelo esté omitida.
 
@@ -64,7 +66,7 @@ $$
 
 Esto es un problema, ya que no podemos observar la habilidad de las personas.
 
-**1)** Estimar un modelo sesgado de lwage contra educ y exper. Guardar como "modelo_sesgado" e imprimir summary() **(1 punto)**.
+**1)** Estimar un modelo sesgado de lwage contra educ y exper. Guardar como "modelo_sesgado" e imprimir summary().
 
 ```{r}
 
@@ -75,7 +77,7 @@ summary(modelo_sesgado)
 
 La mejor forma de solucionar este problema es encontrar una variable que podamos utilizar como proxy de habilidad, ya que simplemente la incluiríamos en la regresión en lugar de la variable omitida. En este data set, por ejemplo, tenemos la variable IQ.
 
-**2)** Estimar un segundo modelo incluyendo la variable IQ como proxy de habilidad. Asignar a modelo_proxy. Imprimir summary() **(1 punto)**.
+**2)** Estimar un segundo modelo incluyendo la variable IQ como proxy de habilidad. Asignar a modelo_proxy. Imprimir summary().
 
 ```{r}
 
@@ -84,7 +86,7 @@ modelo_proxy <- lm(lwage ~ educ + exper + IQ, data=wage2)
 summary(modelo_proxy)
 ```
 
-No obstante, no siempre tenemos acceso a un buen proxy para nuestra variable omitida entre los datos. Aquí es donde aparece la solución por variables instrumentales (IV). La lógica de las variables instrumentales corresponde a desagregar el efecto de nuestra variable endógena (educación) sobre la respuesta. Podemos decir que el efecto de educación se descompone en dos elementos, una porción exógena (el efecto puro de educación sobre los ingresos) y una porción endógena (el efecto de educación sobre los ingresos dada por el sesgo de omitir habilidad). Lo que intentaremos hacer será aislar el efecto puro de educación $(educ^*)$ del efecto del sesgo $(v_2)$.
+No obstante, no siempre tenemos acceso a un buen proxy para nuestra variable omitida entre los datos. Aquí es donde aparece la solución por variables instrumentales (IV). La lógica de las variables instrumentales corresponde a desagregar el efecto de nuestra variable endógena (educación) sobre la respuesta. Podemos decir que el efecto de educación se descompone en dos elementos, una porción exógena (el efecto puro de educación sobre los ingresos) y una porción endógena (el efecto de educación sobre los ingresos dada por el sesgo de omitir habilidad). Lo que intentaremos hacer es aislar la porción de educación que no está dada por el hecho de ser más habil $(educ^*)$ del la porción de educación que si se explica por ser más habil. $(v_2)$.
 
 $$
 educ = educ^* + v_2
@@ -110,19 +112,19 @@ $$
 \textrm{Cov}(inst, u) = 0
 $$
 
-Lamentablemente, este supuesto no es comprobable, y suele ser el punto débil de gran parte de las estimaciones que utilizan variables instrumentales. Esto, ya que es muy dificil encontrar variables relevantes que además sean exógenas.
+Este supuesto suele ser el punto débil de gran parte de las estimaciones que utilizan variables instrumentales auxiliares. Esto, ya que es muy dificil encontrar variables relevantes que además sean exógenas. Además, las formas en que podemos poner a prueba la exogeneidad de los instrumentos no son infalibles (prueba de Sargan).
 
 #### Educación
 
 Supongamos que queremos ver el efecto de la educación sobre los ingresos pero no tenemos la variable IQ para estimar nuestra regresión. Tenemos que encontrar instrumentos que cumplan los dos criterios anteriores para estimar nuestro modelo.
 
-Digamos que creemos que la educación de los padres podría ser un buen instrumento para educación. Sabemos que los padres con mayor educación entregarán también una mayor educación a sus hijos (relevancia), y supondremos, para este ejercicio, que la educación de los padres no está asociada a la habilidad de sus hijos 🦆 (exogeneidad).
+Digamos que creemos que la educación de los padres podría ser un buen instrumento para educación. Sabemos que los padres con mayor educación entregarán también una mayor educación a sus hijos (relevancia), y supondremos, para este ejercicio, que la educación de los padres no está asociada con los ingresos/habilidad de sus hijos a través de otra vía (exogeneidad).
 
 ## Mínimos cuadrados en dos etapas (2SLS)
 
 ### Etapa 1: Modelo en forma reducida
 
-Podemos, por lo tanto, escribir una ecuación a la cual llamaremos la forma reducida para educación. Esta es la primera etapa de nuestra estimación. Ajustamos una regresión de la variable endógena contra las variables exógenas de nuestro modelo principal y los instrumentos adicionales.
+Podemos, por lo tanto, escribir una proyección lineal a la cual llamaremos la forma reducida para educación. Esta es la primera etapa de nuestra estimación. Ajustamos una regresión de la variable endógena contra las variables exógenas de nuestro modelo principal y los instrumentos adicionales.
 
 $$
 educ = \pi_0 + \pi_1exper + \pi_2 meduc + \pi_3 feduc + v_2
@@ -133,9 +135,9 @@ $$
 educ = educ^* + v_2
 $$
 
-Si al menos uno de los coeficientes de nuestros instrumentos es significativo para educ $(\pi_2 \neq 0 \quad\text{o}\quad \pi_3 \neq 0)$, diremos que se cumple el criterio de relevancia y que el modelo esta **indentificado**. Para testear esto de forma rigurosa deberíamos hacer una prueba de exlusión de significancia conjunta (prueba F, donde un estadístico F mayor o igual a 10 es una regla orientativa, no una garantía de ausencia de instrumentos débiles). Por simplicidad, en este caso nos conformaremos con la prueba t de significancia individual.
+Si al menos uno de los coeficientes de nuestros instrumentos es significativo para educ $(\pi_2 \neq 0 \quad \text{o} \quad \pi_3 \neq 0)$, diremos que se cumple el criterio de relevancia y que el modelo esta **indentificado**. Para testear esto de forma rigurosa deberíamos hacer una prueba de exlusión de significancia conjunta (prueba F, donde un estadístico F mayor o igual a 10 es una regla orientativa, no una garantía de ausencia de instrumentos débiles bajo homocedasticidad). Por simplicidad, en este caso nos conformaremos con la prueba t de significancia individual (donde buscamos un estadístico mayor a 3.2 en valor absoluto).
 
-**1)** Ajustar modelo de forma reducida para educación. Asignar a "modelo_reducido". Imprimir summary() **(1 punto)**.
+**1)** Ajustar modelo de forma reducida para educación. Asignar a "modelo_reducido". Imprimir summary().
 
 ```{r}
 
@@ -144,7 +146,7 @@ modelo_reducido <- lm(educ ~ exper + meduc + feduc, data = wage2)
 summary(modelo_reducido)
 ```
 
-**2)** Interpretar modelo_reducido. ¿Cual es la hipótesis que estamos probando y que nos permite concluir este modelo respecto de esta hipótesis? Hacer referencia al supuesto de relevancia e identificación de la variable endógena **(1 punto)**.
+**2)** Interpretar modelo_reducido. ¿Cuál es la hipótesis que estamos probando y qué nos permite concluir este modelo respecto de esta hipótesis? Hacer referencia al supuesto de relevancia e identificación de la variable endógena **(1 punto)**.
 
 ::: callout-note
 :::
@@ -197,7 +199,7 @@ $$
 log(wage) = \hat{\beta_0} + \hat{\beta_1}\hat{educ} + \hat{\beta_2}exper + \hat{u} + \hat{\beta_1}\hat{v_2}
 $$
 
-**1)** Estimar segunda etapa del modelo, reemplazando $educ$ por $\hat{educ}$ **(1 punto)**.
+**1)** Estimar segunda etapa del modelo, reemplazando $educ$ por $\hat{educ}$.
 
 Pasos a seguir:
 
@@ -214,14 +216,14 @@ modelo_iv_malo <- lm(lwage ~ educ_hat + exper, data=wage2)
 
 Los coeficientes que obtendremos de este modelo son los correctos, pero los errores estándar no son válidos, ya que no estamos agregando el segundo componente al error compuesto. No es recomendable estimar la segunda etapa de forma manual.
 
-**2)** Volver a estimar el modelo 2SLS con la función ivreg() del paquete ivreg. La sintáxis para ivreg() corresponde a $y \sim x_1 + x_2 +...+ x_k \quad | \quad z_1 + z_2 + ...+z_h$, donde las $\textbf{x}$ corresponden a todas las variables del modelo original, y las $\textbf{z}$ corresponden a las variables exógenas y los instrumentos adicionales. Asignar a "modelo_iv" **(1 punto)**.
+**2)** Volver a estimar el modelo 2SLS con la función ivreg() del paquete ivreg. La sintáxis para ivreg() corresponde a $y \sim x_1 + x_2 +...+ x_k \quad | \quad z_1 + z_2 + ...+z_h$, donde las $\textbf{x}$ corresponden a todas las variables del modelo original, y las $\textbf{z}$ corresponden a las variables exógenas y los instrumentos adicionales. Asignar a "modelo_iv". Imprimir summary().
 
 ```{r}
 
 modelo_iv <- ivreg(lwage ~ educ + exper | exper + feduc + meduc, data=wage2)
 ```
 
-**3)** Imprimir stargazer() incluyendo **(1 punto)**:
+**3)** Imprimir stargazer() incluyendo:
 
 -   modelo_sesgado
 
@@ -236,7 +238,7 @@ modelo_iv <- ivreg(lwage ~ educ + exper | exper + feduc + meduc, data=wage2)
 stargazer(modelo_sesgado, modelo_proxy, modelo_iv_malo, modelo_iv, type = "text")
 ```
 
-**4)** Interpretar resultados de los modelos **(4 puntos)**.
+**4)** Interpretar resultados de los modelos. Formar grupos de 2 personas y discutir en 5 minutos. **(4 puntos)**.
 
 Considerar para su respuesta:
 
@@ -280,12 +282,16 @@ sample_iv <- ivreg(lwage ~ educ + exper | exper + feduc + meduc, data=wage2_samp
 stargazer(sample_sesgado, sample_proxy, sample_iv_malo, sample_iv, type="text")
 ```
 
-**6)** Comparar errores estándar y coeficientes de determinación entre los modelos con variables instrumentales y explicar motivos de la diferencia (buscar en el libro) **(1 punto)**.
+**6)** **BONUS:** Comparar errores estándar y coeficientes de determinación entre los modelos con variables instrumentales y explicar motivos de la diferencia (buscar en el libro) **(1 punto)**.
 
 ::: callout-note
 :::
 
-### Intention-to-treat
+## Cierre
+
+En los mismos grupos anteriores, imaginen que son revisores de una prestigiosa revista econométrica y deben elaborar un comentario dirigido a los autores que han presentado este análisis para ser publicado en su revista. Consideren en su comentario qué aspectos del análisis que les parecen interesantes o destacables (1), cuales son las debilidades más relevantes (2) y cuál es su veredicto respecto de la pertinencia del estudio para ser publicado, junto a las sugerencias harían a los autores para mejorar o robustecer su artículo (3). Discutir en 5 minutos.
+
+## II. Intention-to-treat
 
 Cuando la selección a un tratamiento es exógena, pero la decisión de participar no lo es, comparar por selección permite estimar el **efecto de ofrecer el tratamiento (ITT)**. Utilizar la selección como instrumento para la participación permite estimar el **efecto local del tratamiento en quienes participan por haber sido seleccionados (LATE)**, bajo los supuestos de relevancia, exclusión, exogeneidad y monotonicidad.
 
@@ -323,22 +329,21 @@ voucher_long <- full_join(score_90, score_94) %>%
   mutate(year = ifelse(year_94==1, 94, 90))
 ```
 
-**3)** Volver a estimar el modelo DID con controles de la sesión anterior, pero en esta ocasión utilizando la variable endógena choice como tratamiento. Asignar a "did_endogeno" **(1 punto)**.
+**3)** Volver a estimar el modelo DID con controles de la sesión anterior, pero en esta ocasión utilizando la variable endógena choice como tratamiento. Asignar a "did_endogeno".
 
 ```{r}
 
 did_endogeno <- lm(math ~ choice + year_94 + choice*year_94 + hispanic + black, data = voucher_long)
 ```
 
-**4)** Volver a estimar modelo DID, pero en esta ocasión utilizando select y select\*year_94 como instrumentos para choice y choice\*year_94. Asignar a "did_iv" **(1 punto)**.
+**4)** Volver a estimar modelo DID, pero en esta ocasión utilizando select y select\*year_94 como instrumentos para choice y choice\*year_94. Asignar a "did_iv".
 
 ```{r}
 
 did_iv <- ivreg(math ~ choice + year_94 + choice*year_94 + hispanic + black | select + select*year_94 + year_94 + hispanic + black, data=voucher_long)
-
 ```
 
-**5)** Imprimir tabla de did_endogeno y did_iv con stargazer() **(1 punto)**.
+**5)** Imprimir tabla de did_endogeno y did_iv con stargazer().
 
 ```{r}
 
@@ -352,25 +357,118 @@ stargazer(did_endogeno, did_iv, type="text")
 
 Para terminar, veamos si la cantidad de años en que un alumno participó del programa de vouchers tiene una influencia sobre su puntaje de matemáticas
 
-**1)** Ajustar un modelo de mnce contra mnce90, choiceyrs, black, hispanic y female. Utilizar base de datos no transformada. Asignar a "voucher_endogeno" **(1 punto)**.
+**1)** Ajustar un modelo de mnce contra mnce90, choiceyrs, black, hispanic y female. Utilizar base de datos no transformada. Asignar a "voucher_endogeno".
 
 ```{r}
 
 voucher_endogeno <- lm(mnce ~ mnce90 + choiceyrs + black + hispanic + female, data=voucher)
 ```
 
-**2)** Repetir regresión anterior utilizando selectyrs como instrumento para choiceyrs. Asignar a "voucher_iv" **(1 punto)**.
+**2)** Repetir regresión anterior utilizando selectyrs como instrumento para choiceyrs. Asignar a "voucher_iv".
 
 ```{r}
 
 voucher_iv <- ivreg(mnce ~ mnce90 + choiceyrs + black + hispanic + female | mnce90 + selectyrs + hispanic + black + female, data = voucher)
 ```
 
-**3)** Imprimir tabla de voucher_endogeno y voucher_iv con stargazer() **(1 punto)**.
+**3)** Imprimir tabla de voucher_endogeno y voucher_iv con stargazer().
 
 ```{r}
 
 stargazer(voucher_endogeno, voucher_iv, type="text")
 ```
 
-**TOTAL: 20 PUNTOS**
+## III. Variables Instrumentales Implicadas por el Modelo (MIIV)
+
+A diferencia de las variables instrumentales auxiliares, donde salimos a buscar fuera de nuestro modelo, existe una familia de variables instrumentales que forman parte de nuestro modelo y permiten hacernos cargo de otra naturaleza de problemas.
+
+### a) Modelos de medición: CEV (Classical Errors in Variables) y variables latentes
+
+Digamos que tenemos una variable medida con error:
+
+$$
+\begin{aligned}
+x_1 = x_1^* + e_1 \\[15pt]
+x_1^* = x_1 - e_1
+\end{aligned}
+$$
+
+El modelo verdadero es por lo tanto:
+
+$$
+y = \beta_0 + \beta_1 x_1^* + v
+$$
+
+Pero ya que no podemos observar $x_1^*$, solo podemos estimar:\
+
+$$
+y = \beta_0 + \beta_1 x_1 + u
+$$
+
+Donde:
+
+$$
+\begin{aligned}
+y = \beta_0 + \beta_1 x_1^* + v \\[15pt]
+y = \beta_0 + \beta_1 (x_1 - e_1) + v \\[15pt]
+y = \beta_0 + \beta_1 x_1 + (v - \beta_1 e_1)
+\end{aligned}
+$$
+
+Y por lo tanto:
+
+$$
+u = (v - \beta_1 e_1)
+$$
+
+¿Qué pasa con $\beta_1$ al hacer estimar este modelo? Ya que obtenemos un error compuesto $(v - \beta_1e_1)$, es aquí donde el supuesto que hagamos respecto del error de medición se vuelve relevante. El supuesto de errores en variables nos dice que, cuando el error de medición **NO** esta correlacionado con la variable verdadera (error no sistemático o aleatorio), obtendremos una estimación **inconsistente** del efecto sobre la respuesta.
+
+$$
+\text{CEV assumption}: \text{Cov}(x_1^*, e_1) = 0 \Rightarrow \text{Cov}(x_1, e_1) \neq 0
+$$
+
+Este sesgo se conoce como **sesgo de atenuación**, ya que el coeficiente termina escalado por el ratio entre varianzas:
+
+$$
+\text{plim}(\hat{\beta_1}) = \beta_1 \cdot \big(\frac{\text{Var}(x_1^*)}{\text{Var}(x_1)}\big)
+$$
+
+#### Variables instrumentales ante errores de medición
+
+Si tenemos una segunda medición de $x_1^*$, digamos $x_{12}$, podemos usar esta medición como instrumento para $x_{11}$ y contrarrestar el sesgo de atenuación. Esto nos lleva al territorio de modelos de medición de variables latentes, donde nos quedamos solo con la varianza que comparten dos o más indicadores de una variable verdadera subyacente.
+
+**1)** Volver a estimar el modelo proxy con KWW como instrumento para IQ.
+
+```{r}
+
+modelo_proxy_iv <- ivreg(lwage ~ educ + exper + IQ | educ + exper + KWW, data=wage2)
+
+summary(modelo_proxy_iv)
+```
+
+### b) Modelos estructurales: Identificación en estimación de sistemas (condición de orden)
+
+Un segundo caso de variables instrumentales implicadas en el modelo se asocia a la estimación de sistemas. Digamos que tenemos las variables $y_1, y_2, x_1, z_1 \quad \text{y} \quad z_2$, y queremos estimar el siguiente modelo.
+
+$$
+\begin{aligned}
+y_1 = \alpha_{10} + \beta_{12} y_{2} + \gamma_{11} x_{1} + \delta_{11}z_{1} + u_1 \\[15pt]
+y_2 = \alpha_{20} + \beta_{21} y_{1} + \gamma_{21} x_{1} + \delta_{22}z_{2} + u_2
+\end{aligned}
+$$
+
+La condición de orden nos dice que necesitamos al menos tantos instrumentos (variables exógenas) como variables explicativas (endógenas).
+
+En el caso de un sistema de ecuaciones, la condición de orden nos dice que necesitamos al menos tantas variables excluidas de cada ecuación como variables endógenas incluidas.
+
+## IV. Regresores Generados
+
+Si tenemos el siguiente modelo, donde no podemos observar $q$, pero podemos construirlo con la función $f(w, \delta)$:
+
+$$
+y = \beta_0 + \beta_1x_1 + ... + \beta_kx_k + \gamma q + u 
+$$
+
+Si $\text{E}(u | x, w) = 0$, podemos estimar $\gamma$ de forma consistente usando $\hat{q}=f(w, \hat{\delta})$. En español, podemos estimar un regresor en una primera etapa y después utilizarlo en nuestro modelo, siempre y cuando hagamos un ajuste de la matriz de varianzas y covarianzas que refleje la incertidumbre de la primera etapa (análogo a 2SLS).
+
+**TOTAL: 7 PUNTOS**

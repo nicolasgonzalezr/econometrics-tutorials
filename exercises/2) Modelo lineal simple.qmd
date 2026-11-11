@@ -313,6 +313,23 @@ Nos dimos cuenta que algunos jueces desayunan en el "Café Calabozo", donde los 
 
 Si encontramos diferencias en libertades condicionales según el café que frecuentan los jueces, podríamos estar cerca de encontrar un tratamiento para impedir que el hambre perjudique injustamente el resultado de algunas personas en el sistema penal.
 
+Crear desayunos.csv
+
+```{r}
+
+alpha <- 4
+
+tau <- 2
+
+x_dummy <- rbinom(100, 1, 0.5)
+
+y <- round(alpha + tau*x_dummy + u)
+
+hungry_judge_ate <- data.frame(libertades = y, cafe_misericordia = x_dummy)
+
+write.csv(hungry_judge_ate, file = "../data/desayunos.csv", row.names = FALSE)
+```
+
 **1)** Cargar data frame desayunos al entorno de trabajo desde el archivo "../data/desayunos.csv". Utilizar función read.csv(). Asignar a objeto desayunos y visualizar data frame **(1 punto)**.
 
 ```{r}

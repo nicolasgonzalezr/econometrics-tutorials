@@ -94,6 +94,32 @@ Guardar data frame como archivo RDS con la función saveRDS() y también como cs
 
 ```
 
+```{r}
+
+# Ensuciemos nuestros datos
+
+df_sucio <- df
+
+df_sucio$variable_ordinal <- as.character(df_sucio$variable_ordinal)
+
+
+suciedad <- c(",", " ", NA, "#")
+
+
+for (i in suciedad) {
+  
+  for (j in 1:5) {
+    
+    df_sucio[sample(nrow(df_sucio), 1), sample(ncol(df_sucio), 1)] <- i
+    
+  }
+}
+
+write.csv(df_sucio, file="df_sucio.csv", row.names=FALSE)
+
+saveRDS(df_sucio, file="df_sucio.rds")
+```
+
 ### Editemos nuestro data frame
 
 1\) Cargar la librería tidyverse al entorno de trabajo utilizando la función library(), si no la ha instalado, instalar librería con la función install.packages().

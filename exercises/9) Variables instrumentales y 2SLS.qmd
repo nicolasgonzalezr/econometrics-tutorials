@@ -370,7 +370,7 @@ Para terminar, veamos si la cantidad de años en que un alumno participó del pr
 
 ```
 
-## II. Variables Instrumentales Implicadas por el Modelo (MIIV)
+## III. Variables Instrumentales Implicadas por el Modelo (MIIV)
 
 A diferencia de las variables instrumentales auxiliares, donde salimos a buscar fuera de nuestro modelo, existe una familia de variables instrumentales que forman parte de nuestro modelo y permiten hacernos cargo de otra naturaleza de problemas.
 
@@ -451,7 +451,7 @@ La condición de orden nos dice que necesitamos al menos tantos instrumentos (va
 
 En el caso de un sistema de ecuaciones, la condición de orden nos dice que necesitamos al menos tantas variables excluidas de cada ecuación como variables endógenas incluidas.
 
-## III. Regresores Generados
+## IV. Regresores Generados
 
 Si tenemos el siguiente modelo, donde no podemos observar $q$, pero podemos construirlo con la función $f(w, \delta)$:
 

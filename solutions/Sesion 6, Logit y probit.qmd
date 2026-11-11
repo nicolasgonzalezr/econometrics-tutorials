@@ -10,7 +10,7 @@ editor_options:
 
 ## Instrucciones
 
-Responder al siguiente caso completando cada una de las preguntas con los códigos y las justificaciones solicitadas. Los scripts con sus respuestas deben ser cargados al repositorio del curso para la evaluación. El nombre del archivo debe ir en el formato "tarea_6_nombre_apellido.qmd". Los archivos deben ser cargados hasta el día domingo 02 de junio. Cada día de atraso en la entrega implicará un descuento de 1 décima en la nota de la tarea.
+Responder al siguiente caso completando cada una de las preguntas con los códigos y las justificaciones solicitadas. Los scripts con sus respuestas deben ser cargados al repositorio del curso para la evaluación. El nombre del archivo debe ir en el formato "tarea_6_nombre_apellido.qmd". Los archivos deben ser cargados hasta el día viernes 30 de mayo. Cada día de atraso en la entrega implicará un descuento de 1 décima en la nota de la tarea.
 
 ## Aprobación presidencial
 
@@ -18,7 +18,7 @@ Un eje relevante de la agenda programátic del presidente Gabriel Boric se encon
 
 #### Cargar librerias al entorno de trabajo
 
-Cargar librería tidyverse para poder graficar con ggplot2 y modificar data frames con dplyr. También utilizaremos la librería wooldridge para obtener los datos con los que trabajaremos.
+Cargar librería tidyverse para poder graficar con ggplot2 y modificar data frames con dplyr..
 
 ```{r}
 
@@ -149,9 +149,9 @@ $$
 
 #### Estimar un modelo logit
 
-Ajustemos un modelo logit simple de la aprobación del presidente Boric contra las creencias de los chilenos frente a la inmigración. Notar que nuevamente haremos supuestos fuertes y sospechosos al tratar este conjunto de variables categóricas como discretas o continuas (con fines expositivos).
+Ajustemos un modelo logit simple de la aprobación del presidente Boric contra las creencias de los chilenos frente a la inmigración. Notar que nuevamente haremos supuestos fuertes y sospechosos al tratar este conjunto de variables categóricas como discretas o continuas (con fines pedagógicos).
 
-**1)** Ajustar modelo con la función glm(). Utilizar argumento family=binomial(link="logit"). Asignar a "logit_simple". Imprimir summary **(1 punto)**.
+**1)** Ajustar modelo con la función glm(). Utilizar argumento family=binomial(link="logit"). Asignar a "logit_simple". Imprimir summary.
 
 ```{r}
 
@@ -193,7 +193,7 @@ Lamentablemente, esta transformación no lineal conlleva un costo: el efecto par
 Para variables continuas utilizamos cálculo, donde el efecto parcial de $x_j$ sobre la probabilidad de observar la respuesta corresponde a:
 
 $$
-\frac{\partial p(\textbf{x})}{\partial x_j}=g(\beta_0 + \mathbf{x} \boldsymbol{\beta})\beta_j
+\frac{\partial p(\textbf{x})}{\partial x_j}=\frac{\partial G(\beta_0 + \mathbf{x} \boldsymbol{\beta})}{\partial x_j}=g(\beta_0 + \mathbf{x} \boldsymbol{\beta})\beta_j
 $$
 
 Donde g() es la función de densidad de la distribución logística dlogis():
@@ -201,7 +201,7 @@ Donde g() es la función de densidad de la distribución logística dlogis():
 $$ g(\beta_0 + \mathbf{x\beta}) = \frac{exp(\beta_0 + \mathbf{x} \boldsymbol{\beta})}{[1+exp(\beta_0 + \mathbf{x} \boldsymbol{\beta})]^2} 
 $$
 
-**1)** Obtener el efecto parcial para una persona con creencias en favor de la inmigración de nivel 4. Asumir (incorrectamente) que inmigración es una variable continua **(1 punto)**.
+**1)** Obtener el efecto parcial para una persona con creencias en favor de la inmigración de nivel 4. Asumir (incorrectamente) que inmigración es una variable continua.
 
 Pasos a seguir
 
@@ -243,7 +243,7 @@ $$
 G[\beta_0 + \beta_1x_1 + \beta_2x_2 + ... + \beta_k(c_k+1)] - G[\beta_0 + \beta_1x_1 + \beta_2x_2 + ... + \beta_kc_k]
 $$
 
-**1)** Obtener el efecto parcial sobre aprobación para una persona que pasa de tener creencias en favor de la inmigración de nivel 4 a nivel 5. Asumir que inmigración es una variable discreta **(1 punto)**.
+**1)** Obtener el efecto parcial sobre aprobación para una persona que pasa de tener creencias en favor de la inmigración de nivel 4 a nivel 5. Asumir que inmigración es una variable discreta.
 
 Pasos a seguir
 
@@ -279,11 +279,11 @@ print(partial_effect)
 
 ## Probit
 
-Para un modelo probit, utilizamos la función de densidad cumulativa de una distribución normal estándar $\Phi(z)$, que también transforma cualquier valor en los reales a un número entre 0 y 1. Mientras que un modelo logit es lineal en los log-odds, un modelo probit es lineal en los puntajes z.
+Para un modelo probit, utilizamos la función de densidad cumulativa de una distribución normal estándar $\Phi(z)$, que también transforma cualquier valor en los reales a un número entre 0 y 1. Mientras que un modelo logit es lineal en los log-odds, un modelo probit es lineal en puntajes z.
 
 Función de densidad cumulativa de la distribución normal pnorm():
 
-$$ G(\beta_0 + \mathbf{x\beta})= \int_{-\infty}^{\beta_0 + \mathbf{x\beta}} \frac{1}{\sqrt{2\pi}} exp(-\frac{(\beta_0 + \mathbf{x\beta})^2}{2}) 
+$$ G(\beta_0 + \mathbf{x\beta})= \int_{-\infty}^{\beta_0 + \mathbf{x\beta}} \frac{1}{\sqrt{2\pi}} exp(-\frac{(v)^2}{2})dv
 $$
 
 ```{r}
@@ -321,7 +321,7 @@ $$
 
 #### Estimar un modelo probit
 
-**1)** Ajustar modelo con la función glm(). Utilizar argumento family=binomial(link="probit"). Asignar a "probit_simple" e imprimir summary **(1 punto)**.
+**1)** Ajustar modelo con la función glm(). Utilizar argumento family=binomial(link="probit"). Asignar a "probit_simple" e imprimir summary.
 
 ```{r}
 
@@ -336,7 +336,7 @@ summary(probit_simple)
 Que cuando las creencias frente a la inmigración son un 1 unidad más positivas, la aprobación crece en 0.14 desviaciones estándar.
 :::
 
-Aunque los puntajes z o desviaciones estándar parezcan tener una interpretabilidad más natural que los log-odds, hay que tener en cuenta que esta desviación estándar no corresponde a nuestra respuesta, solo tiene una intepretación natural sobre una variable latente (no observable) que causa los valores \[0,1\]. El efecto es lineal en la transformación z, pero no en las probabilidades. Para obtener los efectos parciales, repetimos el ejercicio que hicimos para el modelo logit.
+Aunque los puntajes z parezcan tener una interpretabilidad más natural que los log-odds, hay que tener en cuenta que las desviación estándar estan definidas y solo tienen una interpretación natural sobre una variable latente (no observada) que causa los valores \[0,1\], no sobre nuestra respuesta. El efecto es lineal en el puntaje z, pero no en las probabilidades. Para obtener los efectos parciales, repetimos el ejercicio que hicimos para el modelo logit.
 
 #### Efecto parcial para variables continuas
 
@@ -346,7 +346,7 @@ $$
 g(\beta_0 + \mathbf{x}\boldsymbol{\beta}) * \beta_j = \frac{1}{\sqrt{2\pi}} exp(-\frac{(\beta_0 + \mathbf{x}\boldsymbol{\beta})^2}{2}) * \beta_j
 $$
 
-**1)** Obtener el efecto parcial para una persona con creencias en favor de la inmigración de nivel 1. Asumir (incorrectamente) que inmigración es una variable continua **(1 punto)**.
+**1)** Obtener el efecto parcial para una persona con creencias en favor de la inmigración de nivel 1. Asumir (incorrectamente) que inmigración es una variable continua.
 
 ```{r}
 
@@ -370,7 +370,7 @@ $$
 G[\beta_0 + \beta_1x_1 + \beta_2x_2 + ... + \beta_k(c_k+1)] - G[\beta_0 + \beta_1x_1 + \beta_2x_2 + ... + \beta_kc_k]
 $$
 
-**1)** Obtener el efecto parcial sobre aprobación para una persona que pasa de tener creencias en favor de la inmigración de nivel 1 a nivel 2. Asumir que inmigración es una variable discreta **(1 punto)**.
+**1)** Obtener el efecto parcial sobre aprobación para una persona que pasa de tener creencias en favor de la inmigración de nivel 1 a nivel 2. Asumir que inmigración es una variable discreta.
 
 ```{r}
 
@@ -390,7 +390,7 @@ print(partial_effect)
 
 ## Logit vs probit
 
-**1)** Comparar coeficientes estimados para inmigración en logit_simple y probit_simple **(1 punto)**.
+**1)** Comparar coeficientes estimados para inmigración en logit_simple y probit_simple.
 
 **a)** Dividir coeficiente logit_simple en coeficiente probit_simple.
 
@@ -401,17 +401,16 @@ print(partial_effect)
 probit_simple$coefficients["inmigracion"]/logit_simple$coefficients["inmigracion"]
 
 logit_simple$coefficients["inmigracion"]/probit_simple$coefficients["inmigracion"]
-
 ```
 
-**c)** (BONUS) Buscar explicación en el libro y explicar resultado **(1 punto)**.
+**c)** **(BONUS)** Buscar explicación en el libro y explicar resultado **(1 punto)**.
 
 ::: callout-note
 :::
 
 ## Modelo multiple
 
-**1)** Ajustar un modelo logit multiple incluyendo controles para **(1 punto)**:
+**1)** Ajustar un modelo logit multiple incluyendo controles para:
 
 -   izquierda
 
@@ -431,7 +430,7 @@ logit_multiple <- glm(aprobacion ~ inmigracion + izquierda + edad_18 + mujer + u
 summary(logit_multiple)
 ```
 
-**2)** Calcular el efecto parcial cuando inmigración cambia de 4 a 5, para mujeres que viven en sectores rurales y tienen valores promedio en las demás variables. Asumir que inmigración es una variable discreta **(1 punto)**.
+**2)** Calcular el efecto parcial cuando inmigración cambia de 4 a 5, para mujeres que viven en sectores rurales y tienen valores promedio en las demás variables. Asumir que inmigración es una variable discreta.
 
 ```{r}
 
@@ -455,7 +454,7 @@ print(partial_effect)
 
 Supongamos que tenemos razones para pensar que las creencias frente a la inmigración pueden tener un efecto creciente sobre la aprobación. Asimismo, intuimos que las creencias frente a la inmigración tienen un efecto diferente para personas que viven en sectores urbanos vs sectores rurales.
 
-**1)** Estimar un modelo logit multiple con un término cuadrático para inmigración y una interacción entre urbano e inmigración. Asignar a "logit_marginal". Imprimir summary() **(1 punto)**.
+**1)** Estimar un modelo logit multiple con un término cuadrático para inmigración y una interacción entre urbano e inmigración. Asignar a "logit_marginal". Imprimir summary().
 
 ```{r}
 
@@ -487,7 +486,7 @@ $$
 \frac{\partial p(\textbf{x})}{\partial x_{j}} = g(\beta_0 + \mathbf{x}\boldsymbol{\beta})*(\beta_j + \beta_{j\times h}x_h)
 $$
 
-**2)** **a)** Calcular efecto parcial de inmigración sobre aprobacion en el modelo logit_marginal. Asumir que inmigración es una variable continua. **(1 punto)**.
+**2)** **a)** Calcular efecto parcial de inmigración sobre aprobacion en el modelo logit_marginal. Asumir que inmigración es una variable continua.
 
 -   Calcular efecto parcial para un nivel de inmigración de 2, para hombres que viven en sectores urbanos y que tienen valores promedio en las demás variables. Asignar a "partial_effect_2". Imprimir.
 
@@ -515,9 +514,9 @@ print(partial_effect_6)
 
 ### Semi-elasticidad
 
-Supongamos, ahora, que nos interesa estimar el cambio en la probabilidad ante variaciones porcentuales en las creencias frente a la inmigración. Nuevamente, tomar el logaritmo de una variable discreta con pocos valores no es una estrategia conveniente para modelar, pero lo haremos con fines expositivos.
+Supongamos, ahora, que nos interesa estimar el cambio en la probabilidad ante variaciones porcentuales en las creencias frente a la inmigración. Nuevamente, tomar el logaritmo de una variable discreta con pocos valores no es una estrategia conveniente para modelar, pero lo haremos con fines pedagógicos.
 
-**1)** Crear columna "log_inmigracion" en la base de datos y ajustar un modelo probit de aprobacion contra log_inmigracion. Asignar a "probit_elasticidad". Imprimir summary **(1 punto)**.
+**1)** Crear columna "log_inmigracion" en la base de datos y ajustar un modelo probit de aprobacion contra log_inmigracion. Asignar a "probit_elasticidad". Imprimir summary.
 
 Incluir como covariables:
 
@@ -540,7 +539,6 @@ probit_elasticidad <- glm(aprobacion ~ log_inmigracion + izquierda + edad_18 + m
 summary(probit_elasticidad)
 
 cep$log_inmigracion <- NULL
-
 ```
 
 Con la transformación $\log(x_j+1)$, el efecto marginal respecto de $x_j$ es:
@@ -553,7 +551,7 @@ Hay que tener cautela al interpretar un modelo logit o probit con un predictor l
 
 Para un incremento de 1% en $x_j$, el cambio aproximado en probabilidad es $g(\beta_0 + \mathbf{x}\boldsymbol{\beta})\beta_j x_j/[100(x_j+1)]$. Multiplicar por 100 para expresarlo en puntos porcentuales.
 
-**2)** Calcular el cambio aproximado en la probabilidad de aprobación ante un incremento de 1% en inmigración de acuerdo con el modelo probit_elasticidad, para una persona con creencias de nivel 8 y con valores medianos en todas las demás variables **(1 punto)**.
+**2)** Calcular el cambio aproximado en la probabilidad de aprobación ante un incremento de 1% en inmigración de acuerdo con el modelo probit_elasticidad, para una persona con creencias de nivel 8 y con valores medianos en todas las demás variables.
 
 ```{r}
 
@@ -571,7 +569,7 @@ print(partial_effect)
 
 ## Goodness of fit
 
-**1)** Ajustar un modelo probit de aprobación contra las siguientes covariables **(1 punto)**:
+**1)** Ajustar un modelo probit de aprobación contra las siguientes covariables:
 
 -   inmigracion
 
@@ -592,7 +590,7 @@ Asignar a "probit_multiple".
 probit_multiple <- glm(aprobacion ~ inmigracion + izquierda + edad_18 + mujer + urbano + urbano*inmigracion, family=binomial(link="probit"), data=cep)
 ```
 
-**2)** Crear nueva columna en el data frame "cep" con los valores predichos de probit_multiple. Tomar valores ajustados y redondear a cero decimales para obtener una predicción. Nombrar columna como "predicted" **(1 punto)**.
+**2)** Crear nueva columna en el data frame "cep" con los valores predichos de probit_multiple. Tomar valores ajustados y redondear a cero decimales para obtener una predicción. Nombrar columna como "predicted".
 
 ```{r}
 
@@ -601,25 +599,25 @@ cep$predicted <- round(probit_multiple$fitted.values, digits=0)
 
 ### Percent correctly predicted, sensibilidad y especificidad
 
-**1)** Crear un vector llamado "suma" con la suma de las columnas aprobacion y predicted **(1 punto)**.
+**1)** Crear un vector llamado "suma" con la suma de las columnas aprobacion y predicted.
 
 ```{r}
 
 suma <- cep$aprobacion + cep$predicted
 ```
 
-**2)** Tomar table() del vector suma. Con esta función, podemos contar cada uno de los valores. Un valor de 2 nos indica un verdadero positivo, un valor de 0 nos indica un verdadero negativo, y un valor de 1 nos indica un falso positivo o un falso negativo predicho por nuestro modelo **(1 punto)**.
+**2)** Tomar table() del vector suma. Con esta función, podemos contar cada uno de los valores. Un valor de 2 nos indica un verdadero positivo, un valor de 0 nos indica un verdadero negativo, y un valor de 1 nos indica un falso positivo o un falso negativo predicho por nuestro modelo.
 
 ```{r}
 
 table(suma)
 ```
 
-**3)** Calcular percent correctly predicted **(1 punto)**.
+**3)** Calcular percent correctly predicted.
 
 Pasos a seguir:
 
--   Contar el número de falsos positivos y falsos negativos--i.e., suma==1.
+-   Contar el número de falsos positivos y falsos negativos--i.e., suma==1. Usar función sum().
 
 -   Sustraer número de errores de predicción del total de observaciones para obtener el total de observaciones correctamente predichas.
 
@@ -638,7 +636,7 @@ percent_correctly_predicted <- correctly_predicted/nrow(cep)
 print(percent_correctly_predicted)
 ```
 
-**3)** Calcular sensibilidad del modelo **(1 punto)**.
+**3)** Calcular sensibilidad del modelo.
 
 Pasos a seguir:
 
@@ -651,6 +649,7 @@ Pasos a seguir:
 -   Imprimir sensibilidad.
 
 ```{r}
+
 verdaderos_positivos <- sum(suma == 2)
 
 positivos <- sum(cep$aprobacion==1)
@@ -660,7 +659,7 @@ sensibilidad <- verdaderos_positivos / positivos
 print(sensibilidad)
 ```
 
-**3)** Calcular especificidad del modelo **(1 punto)**.
+**3)** Calcular especificidad del modelo.
 
 Pasos a seguir:
 
@@ -683,7 +682,9 @@ especificidad <- verdaderos_negativos / negativos
 print(especificidad)
 ```
 
-**4)** Interpretar métricas del modelo y reflexionar sobre bondad de ajuste del modelo tomando en consideración el valor medio de aprobación (leer libro) **(1 punto)**.
+**4)** **a)** Interpretar métricas del modelo **(1 punto).**
+
+**b)** **(BONUS)** Reflexionar sobre bondad de ajuste del modelo tomando en consideración el valor medio de aprobación (buscar explicación en el libro) **(1 punto)**.
 
 ::: callout-note
 :::
@@ -692,7 +693,7 @@ print(especificidad)
 
 También podemos obtener una métrica de bondad de ajuste a través de la verosimilitud de nuestro modelo.
 
-**1)** Ajustar un modelo probit sin predictores (solo un intercepto) con la sintáxis aprobacion \~ 1. Asignar a "probit_cero" **(1 punto)**.
+**1)** Ajustar un modelo probit sin predictores (solo un intercepto) con la sintáxis aprobacion \~ 1. Asignar a "probit_cero".
 
 ```{r}
 
@@ -707,14 +708,13 @@ $$
 
 Donde $\ell_{ur}$ es la log-likelihood de nuestro modelo no restringido y $\ell_{0}$ es la log-likelihood del modelo sin predictores (solo un intercepto).
 
-**2)** Tomar Pseudo R-cuadrado extrayendo las verosimilitudes de probit_multiple y probit_cero con la función logLik() del paquete stats. Imprimir resultado **(1 punto)**.
+**2)** Tomar Pseudo R-cuadrado extrayendo las verosimilitudes de probit_multiple y probit_cero con la función logLik() del paquete stats. Imprimir resultado.
 
 ```{r}
 
 pseudo_R <- 1 - logLik(probit_multiple) / logLik(probit_cero)
 
 print(pseudo_R)
-
 ```
 
 **3)** Tomar Pseudo R-cuadrado como la correlación cuadrada entre los valores observados y las probabilidades ajustadas del modelo.
@@ -724,11 +724,16 @@ print(pseudo_R)
 cor(cep$aprobacion, probit_multiple$fitted.values)^2
 ```
 
+**4)** Interpretar métricas de pseudo R-cuadrado **(1 punto)**.
+
+::: callout-note
+:::
+
 ## Pruebas de exclusión: Likelihood ratio
 
 También podemos hacer pruebas de exclusión basadas en la verosimilitud de nuestro modelo. Al igual que con los residuos, quitar variables de nuestro modelo conduce a una log-likelihood menor o igual a la del modelo completo. Por lo tanto, podemos estimar si la diferencia observada es suficientemente grande como para justificar la permanencia de las variables excluidas.
 
-La likelihood ratio statistic corresponde a:
+El likelihood ratio statistic corresponde a:
 
 $$
 LR = 2(\ell_{ur} - \ell_{r})
@@ -736,7 +741,7 @@ $$
 
 Donde $\ell_{r}$ es la log-likelihood de nuestro modelo restringido. El estadístico de likelihood ratio sigue una distribución aproximadamente chi-cuadrado con q grados de libertad. Donde q es el número de variables excluidas.
 
-**1)** Ajustar un modelo restringido de probit_multiple, ecluyendo las variables edad_18 y mujer. Asignar a "probit_restringido" **(1 punto)**.
+**1)** Ajustar un modelo restringido de probit_multiple, ecluyendo las variables edad_18 y mujer. Asignar a "probit_restringido".
 
 ```{r}
 
@@ -745,7 +750,7 @@ probit_restringido <- glm(aprobacion~inmigracion + izquierda + urbano + urbano*i
 summary(probit_restringido)
 ```
 
-**2)** Calcular el likelihood ratio. Asignar a "LR" **(1 punto)**.
+**2)** Calcular el likelihood ratio. Asignar a "LR".
 
 ```{r}
 
@@ -754,7 +759,7 @@ LR <- 2*(logLik(probit_multiple) - logLik(probit_restringido))
 print(LR)
 ```
 
-**3)** Calcular significancia para una distribución chi-cuadrado con q grados de libertad. Imprimir significancia **(1 punto)**.
+**3)** Calcular significancia para una distribución chi-cuadrado con q grados de libertad. Imprimir significancia.
 
 ```{r}
 
@@ -776,7 +781,7 @@ Una métrica que ofrece dicha conveniencia es el Partial Effect at the Average (
 
 Podemos obtener el PEA de la misma forma que estimamos los efectos parciales anteriormente.
 
-**1)** Obtener el PEA de inmigración sobre aprobación a partir de probit_restringido. Asumir que inmigración es una variable continua **(1 punto)**.
+**1)** Obtener el PEA de inmigración sobre aprobación a partir de probit_restringido. Asumir que inmigración es una variable continua.
 
 ```{r}
 
@@ -890,7 +895,7 @@ z_scores <- qnorm(probit_restringido$fitted.values)
 partial_effects <- dnorm(z_scores)*(probit_restringido$coefficients["inmigracion"] + probit_restringido$coefficients["inmigracion:urbano"]*cep$urbano)
 ```
 
-**3)** Tomar media de partial_effects. Guardar como "APE". Imprimir
+**3)** Tomar media de partial_effects. Guardar como "APE". Imprimir.
 
 ```{r}
 
@@ -920,8 +925,10 @@ APE <- mean(prob_uno - prob_cero)
 print(APE)
 ```
 
-**5)** Comparar APE y PEA, reflexionar respecto de posibles explicaciones para las diferencias observadas.
+**5)** Comparar APE y PEA, reflexionar respecto de posibles explicaciones para las diferencias observadas **(1 punto)**.
 
 ::: callout-note
 En modelos logit y probit con un índice lineal sin interacciones ni términos no lineales, los efectos marginales continuos son mayores en magnitud en torno a una probabilidad de 50%. Evaluar las covariables en sus medias no garantiza situarse en esa zona ni obtener un PEA mayor que el APE.
 :::
+
+**TOTAL: 14 puntos**

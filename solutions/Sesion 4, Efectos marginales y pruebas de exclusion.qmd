@@ -4,11 +4,11 @@ author: "Nicolás González Raposo"
 format: docx
 ---
 
-# Sesión 4, Efectos marginales y pruebas de exclusión
+# Sesión 4, Efectos marginales y pruebas de exclusion
 
 ## Instrucciones
 
-Responder al siguiente caso completando cada una de las preguntas con los códigos y las justificaciones solicitadas. Los scripts con sus respuestas deben ser cargados al repositorio del curso para la evaluación. El nombre del archivo debe ir en el formato "tarea_4_nombre_apellido.qmd". Los archivos deben ser cargados hasta el día domingo 12 de mayo. Cada día de atraso en la entrega implicará un descuento de 1 décima en la nota de la tarea.
+Responder al siguiente caso completando cada una de las preguntas con los códigos y las justificaciones solicitadas. Los scripts con sus respuestas deben ser cargados al repositorio del curso para la evaluación. El nombre del archivo debe ir en el formato "tarea_4_nombre_apellido.qmd". Los archivos deben ser cargados hasta el día viernes 09 de mayo. Cada día de atraso en la entrega implicará un descuento de 1 décima en la nota de la tarea.
 
 ### Cargar librerias al entorno de trabajo
 
@@ -38,7 +38,7 @@ library(stargazer)
 
 En esta sesión trabajaremos con el data set beauty del paquete wooldridge. Estos datos fueron recolectados para evaluar si el atractivo físico tiene una influencia sobre los ingresos de las personas. Esta será la pregunta que intentaremos responder el día de hoy.
 
-**1)** Comenzaremos cargando los datos a nuestro entorno de trabajo con el comando data(''). Este comando asigna automáticamente el nombre del objeto, por lo cual no hay que crear el objeto del data frame **(1 punto)**.
+**1)** Comenzaremos cargando los datos a nuestro entorno de trabajo con el comando data(''). Este comando asigna automáticamente el nombre del objeto, por lo cual no hay que crear el objeto del data frame.
 
 ```{r}
 
@@ -185,14 +185,12 @@ $$
 | Log-level | $\log(y)$ | $x$ | $\%\Delta y \approx (100\beta_1)\Delta x$ |
 | Log-log | $\log(y)$ | $\log(x)$ | $\%\Delta y \approx \beta_1\%\Delta x$ |
 
-Respuesta:
-
 **c)** ¿Cual es el efecto sobre lwage cuando looks cambia de 1 a 5?
 
 **Ojo**: La interpretación de los modelos de elasticidad constante tiene una limitación. A medida que el cambio en el logaritmo se vuelve más grande, la aproximación $\%\Delta y \approx 100 \cdot\Delta log(y)$ se vuelve menos precisa. Para calcular un porcentaje de cambio exacto, usamos la formula:
 
 $$
-\% \Delta y = 100 \times[exp(\beta \Delta x)-1]
+\% \Delta \hat{y} = 100 \cdot [exp(\hat{\beta} \Delta x)-1]
 $$
 
 #### Predictor ordinal
@@ -217,7 +215,6 @@ beauty$looks_std <- (beauty$looks - mean(beauty$looks))/sd(beauty$looks)
 modelo_simple_std <- lm(lwage ~ looks_std, data = beauty)
 
 summary(modelo_simple_std)
-
 ```
 
 **b)** Interpretar resultados del modelo lwage contra looks_std **(1 punto)**.
@@ -239,7 +236,6 @@ beauty <- beauty %>%
          looks_4 = ifelse(looks==4, 1, 0),
          looks_5 = ifelse(looks==5, 1, 0)
          )
-
 ```
 
 **2)** **a)** Volver a ajustar un modelo simple, esta vez de lwage contra el conjunto de nuestras variables dummies. Para ajustar este modelo, debemos elegir 4 de las 5 variables dummies. El nivel de la variable que no incluyamos será absorbido por el intercepto de nuestro modelo. Utilizaremos el valor medio "looks_3" como línea de base. Guardar resultado como "modelo_ordinal". Imprimir summary() del modelo **(2 puntos)**.
@@ -314,7 +310,6 @@ modelo_cuadratico <- lm(lwage ~ looks_1 + looks_2 + looks_4 + looks_5 + female +
 modelo_cuadratico_summary <- summary(modelo_cuadratico)
 
 print(modelo_cuadratico_summary)
-
 ```
 
 **b)** Interpretar efectos marginales de educ y exper sobre lwage. **(2 puntos).**
@@ -347,7 +342,7 @@ beauty_residuals_sq <- beauty_residuals^2
 beauty_fitted_sq <- beauty_fitted^2
 ```
 
-**3)** Creamos un nuevo data frame para no ensuciar nuestro data frame principal.
+**3)** Creamos un nuevo data frame "df_white" para no ensuciar nuestro data frame principal.
 
 ```{r}
 
@@ -397,7 +392,7 @@ print(modelo_restringido_summary)
 Ahora estamos listos para calcular nuestro estadístico F:
 
 $$
-F = \frac{(\mathrm{SSR}_r-\mathrm{SSR}_{ur})/q}{\mathrm{SSR}_{ur}/(n-k-1)}
+F=\frac{\frac{(SSR_r-SSR_{ur})}{q}}{\frac{SSR_{ur}}{n-k-1}}=\frac{SSR_r-SSR_{ur}}{SSR_{ur}}\times \frac{n-k-1}{q}
 $$
 
 **2) a)** Tomar SSR del modelo restringido, asignar a objeto "SSR_r" **(1 punto)**.
@@ -405,7 +400,6 @@ $$
 ```{r}
 
 SSR_r <- sum(modelo_restringido$residuals^2)
-
 ```
 
 **b)** Tomar SSR del modelo no restringido (modelo_cuadratico), asignar a objeto "SSR_ur" **(1 punto)**.
@@ -457,7 +451,7 @@ $$
 
 Pero nuestro modelo aún no está terminado. Vimos que tener un atractivo por debajo del promedio parece tener una influencia negativa sobre los ingresos de las personas. Por otra parte, vimos que las personas con niveles de atractivo de 4 y 5 no parecen tener niveles de ingreso significativamente superiores comparados con aquellos de atractivo promedio. En principio, esto nos orienta hacia la conclusión que el atractivo tiene una influencia directa sobre los ingresos, pero solo hasta un nivel de atractivo promedio.
 
-Para ser rigurosos, nos interesaría ver si el conjunto de los niveles por sobre el promedio de atractivo tienen un efecto significativo sobre los ingresos. Para probar esta hipótesis, necesitamos hacer otra prueba de exlusión. Pese a que podríamos repetir la prueba de F, en esta ocasión lo haremos con la prueba LM robusta con fines educativos.
+Para ser rigurosos, nos interesaría ver si el conjunto de los niveles por sobre el promedio de atractivo tienen un efecto significativo sobre los ingresos. Para probar esta hipótesis, necesitamos hacer otra prueba de exlusión. Pese a que podríamos repetir la prueba de F, en esta ocasión lo haremos con la prueba LM robusta.
 
 **1)** Cambiar nombre a modelo_restringido para no causar confusión. Asignar a "modelo_lagrange".
 
@@ -473,7 +467,6 @@ modelo_lagrange <- modelo_restringido
 modelo_restringido_lagrange <- lm(lwage ~ looks_1 + looks_2 + female + educ + exper + I(exper^2), data=beauty) 
 
 summary(modelo_restringido_lagrange)
-
 ```
 
 **3)** Crear vector "residuos_lagrange" con los residuos de modelo_restringido_lagrange.
@@ -513,7 +506,6 @@ residuos_looks_5 <- modelo_looks_5$residuals
 
 ```{r}
 
-
 excluida_1 <- residuos_looks_4*residuos_lagrange
 
 excluida_2 <- residuos_looks_5*residuos_lagrange
@@ -549,7 +541,7 @@ SSR_LM <- sum((modelo_LM$residuals)^2)
 print(SSR_LM)
 ```
 
-**11)** Asignar a "q" el nuevo número de variables exluidas (2).
+**11)** Asignar "q" con el número de variables exluidas (2).
 
 ```{r}
 
@@ -574,7 +566,7 @@ LMstat <- nrow(beauty) - SSR_LM
 
 ### Conclusión
 
-1\) Imprimir tabla de regresión con modelo_ordinal, modelo_cuadratico, modelo_lagrange, y modelo_restringido_lagrange con la función stargazer().
+1\) Imprimir tabla de regresión con modelo_ordinal, modelo_cuadratico, modelo_lagrange, y modelo_restringido_lagrange con la función stargazer() **(1 punto)**.
 
 ```{r}
 

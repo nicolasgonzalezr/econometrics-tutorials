@@ -78,7 +78,6 @@ Para conseguir la estructura de los datos en 4 grupos, tenemos que excluir de la
 ```{r}
 
 
-
 ```
 
 Ahora tenemos que transformar nuestros datos a formato largo. Esto quiere decir que tendremos dos filas para cada observación, donde los puntajes de matemáticas de los dos períodos estarán en la misma columna.
@@ -125,6 +124,7 @@ Pasos a seguir
 
 ```{r}
 
+
 ```
 
 La formula del estimador de diferencias en diferencias corresponde a:
@@ -151,11 +151,13 @@ $$
 
 ```{r}
 
+
 ```
 
 **7)** Calcular diferencias en diferencias a partir de la formula provista. Asignar a "diff_in_diff". Imprimir resultado.
 
 ```{r}
+
 
 ```
 
@@ -170,7 +172,7 @@ El estimador de diferencias en diferencias corresponde al ATT (Average Treatment
 
 ```{r}
 
-contrafactual <-
+contrafactual <- NA_real_ # Completar
 
 filas <- data.frame(voucher= as.factor(c(1, 1)), year= c(90, 94) , math= c(tratamiento_90, contrafactual))
 
@@ -204,6 +206,7 @@ Donde $d2$ corresponde a una variable dummy para el segundo período, y $dT$ cor
 
 ```{r}
 
+
 ```
 
 **2)** Interpretar resultados del modelo DID **(1 punto)**.
@@ -218,6 +221,7 @@ Ahora incluiremos controles
 **1)** Ajustar un modelo lineal DID de math contra voucher. Incluir controles para "black" e "hispanic". Asignar a "did_controles".
 
 ```{r}
+
 
 ```
 
@@ -259,12 +263,12 @@ Construir gráfico de diferencias en diferencias a partir de los coeficientes (m
 ```{r}
 
 contrafactual_controles <- data.frame(contrafactual= as.factor(c(0, 0, 0, 0, 1, 1)), voucher= as.factor(c(0, 0, 1, 1, 1, 1)), year= rep(c(90, 94), times=3) , math= c(control_90, control_94, tratamiento_90, tratamiento_94, contrafactual_90, contrafactual_94))
-
 ```
 
 **6)** Graficar modelo did_controles con ggplot(). Incluir contrafactual en el gráfico.
 
 ```{r}
+
 
 ```
 
@@ -284,7 +288,7 @@ $$
 $$
 \begin{aligned}
 y = \beta_0 + \delta_0d2 + \beta_1dG + \delta_1 d2 \cdot dG \\[10pt]
-\beta_2 dA + \delta_2d2 \cdot dA + \beta_3 dG \cdot dA + \delta_3 d2 \cdot dG \cdot dA + u
++ \beta_2 dA + \delta_2d2 \cdot dA + \beta_3 dG \cdot dA + \delta_3 d2 \cdot dG \cdot dA + u
 \end{aligned}
 $$
 

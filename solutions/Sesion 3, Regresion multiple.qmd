@@ -1,10 +1,10 @@
 ---
-title: "Sesion 3, Regresion multiple"
+title: "Sesion 3, Regresion multiple & heterocedasticidad"
 author: "Nicolás González Raposo"
 format: docx
 ---
 
-# Sesión 3, Regresión múltiple
+# Sesión 3, Regresión múltiple & heterocedasticidad
 
 ## Instrucciones
 
@@ -132,7 +132,11 @@ $$
 calorias = \delta_0 + \overset{(-)}{\delta_1} mujer + \overset{(+)}{\delta_2} azucar + v
 $$
 
-Por otra parte, vamos a suponer que el azucar también tiene una relación con la cantidad de libertades condicionales concedidas por los jueces. Dado que las calorías derivadas del azucar refinado proveen energía de corta duración, los jueces con mayores consumos de azucar se agotarán con mayor rapidez en el transcurso del día y concederán un menor número de libertades condicionales en comparación con aquellos jueces que obtienen sus calorias de alimentos saludables.
+Por otra parte, vamos a suponer que el azucar también tiene una relación con la cantidad de libertades condicionales concedidas por los jueces. Dado que las calorías derivadas del azucar refinada proveen energía de corta duración, los jueces con mayores consumos de azucar se agotarán con mayor rapidez en el transcurso del día y concederán un menor número de libertades condicionales en comparación con aquellos jueces que obtienen sus calorias de alimentos saludables.
+
+$$
+libertades = \beta_0 + \overset{(+)}{\beta_1} calorias + \overset{(-)}{\beta_2} mujer + \overset{(-)}{\beta_3} azucar + u
+$$
 
 **3)** Definir la media condicional de consumo de azucar refinado contra calorías y libertades.
 
@@ -178,9 +182,7 @@ ggplot(azucar_df, aes(x=azucar))+
 
 ### Calorías
 
-Ya que tenemos los controles relevantes para obtener condiciones ceteris paribus en nuestro modelo, podemos definir nuestra variable explicativa de interés. Dado que nos dimos cuenta que las calorías se ven afectadas por las variables sexo y azucar, tenemos que modelar la variable considerando estos efectos.
-
-$$
+Ya que tenemos los controles relevantes para obtener condiciones ceteris paribus en nuestro modelo, podemos definir nuestra variable explicativa de interés. Dado que nos dimos cuenta que las calorías se ven afectadas por las variables sexo y azucar, tenemos que modelar la variable considerando estos efectos. $$
 calorias = \delta_0 + \overset{(-)}{\delta_1} mujer + \overset{(+)}{\delta_2} azucar + v
 $$
 
@@ -231,7 +233,6 @@ for (i in 1:300) {
 ```{r}
 
 calorias <- delta_cero + delta_mujer*mujer + delta_azucar*azucar + v
-
 ```
 
 ### Error & Heterocedasticidad
@@ -265,7 +266,6 @@ Específicamente, diremos que la varianza del error incluirá alguna función de
 set.seed(4)
 
 u <- rtruncnorm(n=300, a=-7, b=7, mean=0, sd=calorias/300)
-
 ```
 
 **2)** Graficar distribución de calorias contra errores con ggplot() **(2 puntos)**.
@@ -382,7 +382,7 @@ print(modelo_simple_SER)
 print(modelo_simple_rsq)
 ```
 
-**d)** Graficar libertades contra calorias100 usando ggplot(). Graficar puntos con geom_point() y ajustar un modelo lineal sobre los puntos con geom_smooth().
+**d)** Graficar libertades contra calorias100 usando ggplot(). Graficar puntos con geom_point() y ajustar un modelo lineal sobre los puntos con geom_smooth() **(2 punto).**
 
 ```{r}
 
@@ -392,7 +392,6 @@ ggplot(hungry_judge, aes(x=calorias100, y=libertades))+
   xlab("Calorias")+
   ylab("Libertades condicionales")+
   theme_minimal()
-
 ```
 
 **3)** Correr un segundo modelo lineal con lm() agregando la variable "mujer".
@@ -451,7 +450,7 @@ print(modelo_azucar_summary)
 
 ### Colinealidad
 
-Esta forma de modelar el consumo de azucar podría ser incómoda ya que correlaciona fuertemente con las calorías y podría afectar la eficiencia de nuestros estimadores.
+Esta forma de modelar el consumo de azucar es incómoda ya que correlaciona fuertemente con las calorías y podría afectar la eficiencia de nuestros estimadores.
 
 **1)** Desagregar la variable calorias en calorias derivadas del azucar y calorías no derivadas del azucar **(2 puntos)**.
 
@@ -466,7 +465,7 @@ hungry_judge$calorias100_azucar <- azucar * delta_azucar / 100
 hungry_judge$calorias100_salud <- hungry_judge$calorias100 - hungry_judge$calorias100_azucar
 ```
 
-**2)** Volver a ajustar un modelo lineal, esta vez incluyendo como predictores **(2 puntos)** :
+**2)** Volver a ajustar un modelo lineal, esta vez incluyendo como predictores. Asignar a "modelo_multiple" **(2 puntos)** :
 
 -   calorias100_salud
 
@@ -523,6 +522,7 @@ Para hacer una prueba de White de heterocedasticidad, una vía simple es hacerlo
 **1)** Crear columnas para residuos y valores ajustados al cuadrado en el data frame hungry_judge. Asignar nombres "residual_sq" y "fitted_sq" (**1 punto**).
 
 ```{r}
+
 hungry_judge$residual_sq <- hungry_judge$residual^2
 
 hungry_judge$fitted_sq <- hungry_judge$fitted^2
@@ -576,7 +576,7 @@ $$
 
 **1)** Calcular errores robustos con la función vcovHC() del paquete sandwich **(2 puntos)**.
 
--   Calcular matriz de varianza covarianza consistente a la heterocedasticidad con vcovHC()
+-   Calcular matriz de varianza covarianza consistente a la heterocedasticidad con vcovHC() sobre modelo_multiple
 
 -   Tomar los elementos diagonales con diag()
 
@@ -589,7 +589,7 @@ $$
 errores_robustos <- sqrt(diag(vcovHC(modelo_multiple)))
 ```
 
-**2)** Extraer errores regulares de modelo_multiple_summary con \$coefficients\[, "Std. Error"\]. Asignar a objeto errores_regulares **(1 punto)**.
+**2)** Extraer errores regulares de modelo_multiple_summary con \$coefficients\[, "Std. Error"\]. Asignar a objeto "errores_regulares" **(1 punto)**.
 
 ```{r}
 
@@ -611,7 +611,7 @@ print(errores_robustos)
 
 Ahora vamos a estimar los errores estándar de forma empírica con el método de bootstrap.
 
-Bootstrap es una forma empírica de generar una sampling distributions a partir de la muestra observada. Se basa en hacer simulaciones a partir de la muestra.
+Bootstrap es una forma empírica de generar una sampling distribution a partir de la muestra observada. Se basa en hacer simulaciones a partir de la muestra.
 
 Nota: El "wild bootstrap" permite heterocedasticidad manteniendo fijos los predictores. Para esta instancia usaremos el bootstrap no paramétrico conocido como "cases o pairs bootstrap", que también permite heterocedasticidad bajo muestreo independiente de observaciones.
 
@@ -648,7 +648,7 @@ for(i in 1:iteraciones_bootstrap){
 }
 ```
 
-**3)** Tomamos la desviación estándar de cada columna de nuestra matriz de coeficientes con la función apply(). Asignar a errores_robustos_bootstrap **(1 punto)**.
+**3)** Tomamos la desviación estándar de cada columna de nuestra matriz de coeficientes con la función apply(). Asignar a "errores_robustos_bootstrap" **(1 punto)**.
 
 ```{r}
 
@@ -674,3 +674,5 @@ stargazer(modelo_multiple, modelo_multiple, modelo_multiple,
                     as.vector(errores_robustos_bootstrap)), 
           type = "text")
 ```
+
+**TOTAL: 73 puntos**

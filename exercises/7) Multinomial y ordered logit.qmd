@@ -132,6 +132,7 @@ cep %>%
 ```
 
 ```{r}
+
 cep %>%
   dplyr::select(izquierda, edad_18, urbano, escolaridad, mujer) %>%
   summary()
@@ -210,7 +211,6 @@ $$
 betas_salud_corrupcion <- multinomial_simple_summary$coefficients["salud",] - multinomial_simple_summary$coefficients["corrupcion",]
 
 betas_salud_corrupcion
-
 ```
 
 **2)** Interpretar contraste **(1 punto)**.
@@ -237,7 +237,6 @@ multinomial_contraste <- multinom(cbind(corrupcion, delincuencia, pensiones, sal
 multinomial_contraste_summary <- summary(multinomial_simple)
 
 stargazer(multinomial_contraste, type="text")
-
 ```
 
 **4)** Comparar betas_salud_corrupcion con multinomial_contraste_summary\$coefficients\["salud", \].
@@ -248,7 +247,7 @@ multinomial_contraste_summary$coefficients["salud", ]
 
 betas_salud_corrupcion 
 
-round(multinomial_contraste_summary$coefficients["salud", ], digits=3)==round(betas_salud_corrupcion,digits=3) 
+round(multinomial_contraste_summary$coefficients["salud", ], digits=3)==round(betas_salud_corrupcion,digits=3)
 ```
 
 ### Probabilidad estimada
@@ -364,7 +363,6 @@ Pasos a seguir:
 betas_kj <- c(0, multinomial_simple_summary$coefficients[,"izquierda"])
 
 sumatoria <- sum(betas_kj*probs)
-
 ```
 
 **3)** Obtener efectos parciales de izquierda sobre cada una de las respuestas, siguiendo la formula previa.
@@ -402,6 +400,7 @@ Pasos a seguir:
 
 ```{r}
 
+
 ```
 
 ### Multinomial multiple
@@ -422,6 +421,7 @@ Guardar summary() como "multinomial_multiple_summary" e imprimir tabla con starg
 
 ```{r}
 
+
 ```
 
 **2)** Interpretar resultados de multinomial_multiple. Reflexionar con respecto a los mecanismos (teóricos) que podrían explicar los resultados significativos en este modelo. Recordar que los coeficientes por si mismos no reflejan con certeza la dirección del efecto **(1 punto)**.
@@ -431,11 +431,11 @@ Guardar summary() como "multinomial_multiple_summary" e imprimir tabla con starg
 
 #### APE
 
-**3)** Calcular average partial effect **(APE)** en la muestra en base multinomial_multiple. Asignar a "APE_izquierda" e imprimir. Asumir que izquierda es una variable discreta.
+**3)** Calcular average partial effect **(APE)** en la muestra en base multinomial_multiple. Asignar a "APE_izquierda_top" y "APE_izquierda_bottom" e imprimir. Asumir que izquierda es una variable discreta.
 
 Pasos a seguir:
 
--   Crear nuevo data frame llamado "cep_cero_top" filtrando las observaciones con el valor máximo de izquierda (9) y un data frame llamado "cep_cero_bottom", filtrando las observaciones con el valor mínimo de izquierda (0). **¡Ojo, esta no es una convencion teórica!** Es una propuesta para solucionar el problema de excluir observaciones del cálculo y de predecir fuera del dominio.
+-   Crear nuevo data frame llamado "cep_cero_top" excluyendo las observaciones con el valor máximo de izquierda (9) y un data frame llamado "cep_cero_bottom", excluyendo las observaciones con el valor mínimo de izquierda (0). **¡Ojo, esta no es una convencion teórica!** Es una propuesta para solucionar el problema de excluir observaciones del cálculo y de predecir fuera del dominio.
 
 -   Crear nuevo data frame llamado "cep_uno_top" sumando 1 a la columna izquierda de "cep_cero_top". Crear nuevo data frame llamado "cep_uno_bottom" restando 1 a la columna izquierda de "cep_cero_bottom".
 
@@ -452,7 +452,7 @@ Pasos a seguir:
 
 ```
 
-**4)** Interpretar resultados de APE_izquierda **(1 punto)**.
+**4)** Interpretar resultados de APE_izquierda_top y APE_izquierda_bottom **(1 punto)**.
 
 ::: callout-note
 :::
@@ -477,6 +477,7 @@ Pasos a seguir:
 
 ```{r}
 
+
 ```
 
 **6)** Interpretar resultados de APE_urbano y APE_mujer **(2 puntos)**.
@@ -492,13 +493,13 @@ Pasos a seguir:
 
 partial_effects <- matrix(nrow=9, ncol=4)
 
-for (i in min(cep$izquierda):max(cep$izquierda)) {
+for (i in min(cep$izquierda):(max(cep$izquierda)-1)) {
   
   probs <- predict(multinomial_multiple, newdata=data.frame(izquierda=i, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
 
   probs_2 <- predict(multinomial_multiple, newdata=data.frame(izquierda=i+1, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
 
-  partial_effects[i,] <-  probs_2 - probs
+  partial_effects[i+1,] <-  probs_2 - probs
   
 }
 
@@ -517,17 +518,18 @@ ggplot(data = partial_effects, aes(x=izquierda, y=efecto, color=respuesta)) +
 **8)** Graficar cambio en probabilidades estimadas de multinomial_multiple para los diferentes niveles de izquierda. Asumir que izquierda es una variable discreta.
 
 ```{r}
-probabilities <- matrix(nrow=9, ncol=4)
+
+probabilities <- matrix(nrow=10, ncol=4)
 
 for (i in min(cep$izquierda):max(cep$izquierda)) {
   
   probs <- predict(multinomial_multiple, newdata=data.frame(izquierda=i, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
 
-  probabilities[i,] <-  probs
+  probabilities[i+1,] <-  probs
   
 }
 
-probabilities <- data.frame(probabilities = c(probabilities[,1], probabilities[,2], probabilities[,3], probabilities[,4]), izquierda=rep(0:8, times=4), respuesta=rep(c("delincuencia", "pensiones", "corrupcion", "salud"), each=9))
+probabilities <- data.frame(probabilities = c(probabilities[,1], probabilities[,2], probabilities[,3], probabilities[,4]), izquierda=rep(0:9, times=4), respuesta=rep(c("delincuencia", "pensiones", "corrupcion", "salud"), each=10))
 
 ggplot(data = probabilities, aes(x=izquierda, y=probabilities, color=respuesta)) +
   geom_line(linewidth=1.5)+
@@ -622,12 +624,9 @@ cep <- cep %>%
 
 ```{r}
 
-ordered_simple <- polr(inmigracion ~ izquierda, data=cep)
+ordered_simple <- polr(inmigracion ~ izquierda, method="logistic", Hess=TRUE, data=cep)
 
 summary(ordered_simple)
-
-
-
 ```
 
 ### Probabilidad estimada
@@ -666,6 +665,7 @@ No obstante, podemos obtener una estimación más rápida con la función predic
 **1)** Obtener las probabilidades estimadas del modelo ordered_simple para un nivel mediano de la variable izquierda utilizando la función predict(). Asignar a "probs" e imprimir.
 
 ```{r}
+
 
 ```
 
@@ -719,6 +719,7 @@ Pasos a seguir:
 
 ```{r}
 
+
 ```
 
 ### Ordered múltiple
@@ -739,27 +740,29 @@ Guardar como "ordered_multiple", imprimir summary() y stargazer().
 
 ```{r}
 
+
 ```
 
 #### APE
 
-**2)** Calcular average partial effect **(APE)** en la muestra en base a ordered_multiple. Asignar a "APE_izquierda" e imprimir. Asumir que izquierda es una variable discreta.
+**2)** Calcular average partial effect **(APE)** en la muestra en base a ordered_multiple. Asignar a "APE_izquierda_top" y "APE_izquierda_bottom" e imprimir. Asumir que izquierda es una variable discreta.
 
 Pasos a seguir:
 
--   Crear nuevo data frame llamado "cep_cero_top" filtrando las observaciones con el valor máximo de izquierda (9) y un data frame llamado "cep_cero_bottom", filtrando las observaciones con el valor mínimo de izquierda (0). **¡Ojo, esta no es una convencion teórica!** Es una propuesta para solucionar el problema de excluir observaciones del cálculo y de predecir fuera del dominio.
+-   Crear nuevo data frame llamado "cep_cero_top" excluyendo las observaciones con el valor máximo de izquierda (9) y un data frame llamado "cep_cero_bottom", excluyendo las observaciones con el valor mínimo de izquierda (0). **¡Ojo, esta no es una convencion teórica!** Es una propuesta para solucionar el problema de excluir observaciones del cálculo y de predecir fuera del dominio.
 
 -   Crear nuevo data frame llamado "cep_uno_top" sumando 1 a la columna izquierda de "cep_cero_top". Crear nuevo data frame llamado "cep_uno_bottom" restando 1 a la columna izquierda de "cep_cero_bottom".
 
--   Predecir probabilidades de cep_cero_top y cep_cero_bottom en base a multinomial_multiple con la formula predict(). Asignar a probs_cero_top y probs_cero_bottom.
+-   Predecir probabilidades de cep_cero_top y cep_cero_bottom en base a ordered_multiple con la formula predict(). Asignar a probs_cero_top y probs_cero_bottom.
 
--   Predecir probabilidades de cep_uno_top y cep_uno_bottom en base a multinomial_multiple con la formula predict(). Asignar a probs_uno_top y probs_uno_bottom.
+-   Predecir probabilidades de cep_uno_top y cep_uno_bottom en base a ordered_multiple con la formula predict(). Asignar a probs_uno_top y probs_uno_bottom.
 
 -   Tomar resta de (probs_uno_top - probs_cero_top) y (probs_cero_bottom - probs_uno_bottom). Restamos en orden inverso para preservar la dirección del efecto.
 
 -   Tomar colMeans() de cada una de las restas. Asignar a APE_izquierda_top y APE_izquierda_bottom. Imprimir.
 
 ```{r}
+
 
 ```
 
@@ -781,6 +784,7 @@ Pasos a seguir:
 
 ```{r}
 
+
 ```
 
 #### PEA
@@ -791,13 +795,13 @@ Pasos a seguir:
 
 partial_effects <- matrix(nrow=9, ncol=5)
 
-for (i in min(cep$izquierda):max(cep$izquierda)) {
+for (i in min(cep$izquierda):(max(cep$izquierda)-1)) {
   
   probs <- predict(ordered_multiple, newdata=data.frame(izquierda=i, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
 
   probs_2 <- predict(ordered_multiple, newdata=data.frame(izquierda=i+1, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
 
-  partial_effects[i,] <-  probs_2 - probs
+  partial_effects[i+1,] <-  probs_2 - probs
   
 }
 
@@ -817,17 +821,17 @@ ggplot(data = partial_effects, aes(x=izquierda, y=efecto, color=respuesta)) +
 
 ```{r}
 
-probabilities <- matrix(nrow=9, ncol=5)
+probabilities <- matrix(nrow=10, ncol=5)
 
 for (i in min(cep$izquierda):max(cep$izquierda)) {
   
   probs <- predict(ordered_multiple, newdata=data.frame(izquierda=i, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
 
-  probabilities[i,] <-  probs
+  probabilities[i+1,] <-  probs
   
 }
 
-probabilities <- data.frame(probabilities = c(probabilities[,1], probabilities[,2], probabilities[,3], probabilities[,4], probabilities[,5]), izquierda=rep(0:8, times=5), respuesta=rep(c("0 - Muy en desacuerdo", "1 - En desacuerdo", "2 - Ni de acuerdo ni en desacuerdo", "3 - De acuerdo", "4 - Muy de acuerdo"), each=9))
+probabilities <- data.frame(probabilities = c(probabilities[,1], probabilities[,2], probabilities[,3], probabilities[,4], probabilities[,5]), izquierda=rep(0:9, times=5), respuesta=rep(c("0 - Muy en desacuerdo", "1 - En desacuerdo", "2 - Ni de acuerdo ni en desacuerdo", "3 - De acuerdo", "4 - Muy de acuerdo"), each=10))
 
 ggplot(data = probabilities, aes(x=izquierda, y=probabilities, color=respuesta)) +
   geom_line(linewidth=1.5)+

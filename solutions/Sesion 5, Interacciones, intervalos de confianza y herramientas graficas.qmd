@@ -80,6 +80,7 @@ ggplot(data=wage1, aes(x=exper, y=lwage))+
 -   Ajustar una curva de regresión local polinomial con geom_smooth() y method="loess". Asignar un color diferente que a la recta anterior.
 
 ```{r}
+
 ggplot(data=wage1, aes(x=educ, y=lwage))+
   geom_point(color="cyan4")+
   geom_smooth(method="lm", se=FALSE, color = "cyan4")+
@@ -204,10 +205,11 @@ exper <- rep(seq(from=min(wage1$exper), to=max(wage1$exper), length.out=50), tim
 **2)** Crear "expersq" con el cuadrado de exper **(1 punto)**.
 
 ```{r}
+
 expersq <- exper^2
 ```
 
-**3)** Crear "female" como un vector donde los primeros 50 valores correspondan a 0 y los segundos 50 valores correspondan a 1. Utilizar función rep() con argumento each. **(2 puntos)**.
+**3)** Crear "female" como un vector donde los primeros 50 valores correspondan a 0 y los segundos 50 valores correspondan a 1. Utilizar función rep() y argumento each. **(2 puntos)**.
 
 ```{r}
 
@@ -217,12 +219,14 @@ female <- c(rep(c(0, 1), each=50))
 **4)** Asignar a "educ" la media de wage1\$educ **(1 punto)**.
 
 ```{r}
+
 educ <- mean(wage1$educ)
 ```
 
 **5)** Crear data frame "df_interaccion" con columnas para cada una de las 4 variables anteriores **(1 punto)**.
 
 ```{r}
+
 df_interaccion <- data.frame(exper=exper, expersq=expersq, educ=educ, female=female)
 ```
 
@@ -233,7 +237,7 @@ df_interaccion <- data.frame(exper=exper, expersq=expersq, educ=educ, female=fem
 df_interaccion$fitted <- predict(modelo_female, newdata=df_interaccion)
 ```
 
-**7)** Repetir gráfico del modelo complejo, pero agregar color=as.factor(female) a aes() **(2 puntos)**.
+**7)** Repetir gráfico del modelo complejo. Transformar columna female en factor antes de graficar y asignar al argumento color **(2 puntos)**.
 
 ```{r}
 
@@ -449,7 +453,7 @@ valor_t <- qt(percentil, df)
 print(valor_t)
 ```
 
-**3)** Crear vector con c() que vaya desde -Inf hasta beta másel valor t multiplicado por el error. Asignar a "intervalo_confianza". Imprimir **(1 punto)**.
+**3)** Crear vector con c() que vaya desde -Inf hasta beta más el valor t multiplicado por el error. Asignar a "intervalo_confianza". Imprimir **(1 punto)**.
 
 ```{r}
 
