@@ -1,0 +1,316 @@
+---
+title: "Ayudantias Teoria Econometrica"
+---
+
+## Sesión 1, Introducción a R
+
+### Crear una variable y un data frame, funciones básicas
+
+```{r}
+
+# En R, utilizamos vectores c() para construir variables, a diferencia de python donde se utilizan listas (ojo: en R también existen las listas).
+
+# En R las cuentas comienzan desde 1.
+
+# Pueden usar las librerias dplyr para manipular data frames y ggplot2 para generar y visualizar gráficos ().
+
+# Pueden utilizar el operador <- en lugar de = para asignar un valor a un objeto/variable.
+
+# Utilizamos el operador $ para seleccionar una columna completa de un data frame.
+
+# Para hacer subsets de un data frame, podemos seleccionar con corchetes. df[5,6] hace un subset del data frame con el valor de la fila 5 y en la columna 6. Si dejamos un valor sin especificar, df[5,], tomamos la fila 5 y todas las columnas. También podemos especificar rangos df[1:5,6:10], donde tomamos un subset de todas las filas entre la 1 y la 5 y las columnas de la 6 a la 10.
+```
+
+```{r}
+
+set.seed(1)
+```
+
+1\) Crear una variable numérica continua con rnorm(), generar 100 observaciones con media cero y desviación estándar 50.
+
+```{r}
+
+variable_numerica_manual <- c(0.8573, 14.4, 2.1, -40.567)
+
+variable_numerica <- rnorm(100, 0, 50)
+```
+
+2\) Crear una variable cuenta (discreta) con rpois(), generar 100 observaciones con lambda = 5.
+
+```{r}
+
+variable_cuenta_manual <- c(1, 4, 6, 2, 3, 7, 14)
+
+variable_cuenta <- rpois(100, 5)
+```
+
+3\) Crear una variable dummy (binaria) con rbinom(), generar 100 observaciones con prob = 0.3 y size = 1 (el argumento size determina el número de ensayos de bernoulli por observación)
+
+```{r}
+
+variable_dummy_manual <- c(0, 1, 0, 1, 1, 1, 0, 0)
+
+variable_dummy <- rbinom(n = 100, size = 1, prob=0.3)
+```
+
+4\) Crear variable categórica ordinal (factor) con runif(), generar 100 observaciones entre 1 y 4. Utilizar round() para hacer que todos los valores sean enteros. Utilizar el comando as.factor() para coercionar el resultado a la clase factor.
+
+```{r}
+
+variable_ordinal_manual <- c(1, 3, 1, 4, 3, 1, 2)
+
+variable_ordinal <- round(runif(100, min = 1, max = 4), digits=0)
+```
+
+5\) Crear variable categórica nominal con sample(). Generar 100 observaciones muestreando con repetición de la lista de colores provista, con la misma probabilidad de tomar cada color.
+
+```{r}
+
+colores <- c("rojo", "azul", "verde", "amarillo")
+
+variable_nominal <- sample(colores, size=100, replace = TRUE, prob= c(1/4, 1/4, 1/4, 1/4))
+```
+
+6\) Crear un data frame llamado "df" con todas las variables creadas anteriormente. Asignar nombres a las columnas que identifiquen el tipo de variable a la que corresponden.
+
+Guardar data frame como archivo RDS con la función saveRDS() y también como csv con la función write.csv()
+
+```{r}
+# Juntemos nuestras variables en un data frame
+
+df <- data.frame(variable_numerica = variable_numerica, variable_cuenta = variable_cuenta, variable_dummy = variable_dummy, variable_ordinal = variable_ordinal, variable_nominal = variable_nominal)
+
+# Guardar el data frame como archivo RDS
+
+saveRDS(df, file = "mi_primer_df") # =)
+
+# Guardar data frame como csv
+
+write.csv(df, file = "mi_primer_df.csv", row.names = FALSE)
+```
+
+```{r}
+
+# Ensuciemos nuestros datos
+
+df_sucio <- df
+
+
+suciedad <- c(",", " ", NA, "#")
+
+
+for (i in suciedad) {
+  
+  for (j in 1:5) {
+    
+    df_sucio[sample(nrow(df_sucio), 1), sample(ncol(df_sucio), 1)] <- i
+    
+  }
+}
+
+write.csv(df_sucio, file="df_sucio.csv", row.names=FALSE)
+
+saveRDS(df_sucio, file="df_sucio.rds")
+```
+
+### Editemos nuestro data frame
+
+1\) Cargar la librería tidyverse al entorno de trabajo utilizando la función library(), si no la ha instalado, instalar librería con la función install.packages().
+
+```{r}
+
+# El paquete tidyverse incluye el paquete dplyr para editar data frames y ggplot2 para graficar data frames
+
+library(tidyverse)
+```
+
+2\) Cargar el data frame df_sucio al entorno de trabajo con la función readRDS() y visualizar en una nueva pestaña de RStudio. Repetir con la función read.csv()
+
+```{r}
+
+df_sucio <- readRDS(file = "df_sucio.rds")
+
+df_sucio <- read.csv("df_sucio.csv")
+```
+
+3\) Intentar tomar el promedio de una variable =(
+
+```{r}
+
+mean(df_sucio$numerica)
+```
+
+4\) Limpiar data frame de suciedad con la función filter() de dplyr utilizando el operador pipe. Utilizar función is.na() para identificar valores NA.
+
+Comenzar contando la cantidad de valores NA en la columna variable_numerica con las funciones is.na() sum(). Utilizar operador \$.
+
+```{r}
+
+sum(is.na(df_sucio$variable_numerica))
+```
+
+Ahora, limpiar data frame con dplyr.
+
+```{r}
+
+# Utilizar el operador %>%
+
+df_limpio <- df_sucio %>%
+  filter(!is.na(variable_numerica)) %>%
+  filter(variable_numerica != ",") %>%
+  
+  filter_all(~!is.na(.)) %>%
+  filter_all(~ !. %in% c(",", " ", "#")) %>%
+  filter_all(~ !. %in% c(",", " ", "#", NA)) %>%
+  mutate(across(.cols = c(variable_numerica, variable_cuenta, variable_dummy), .fns= as.numeric))
+
+
+df_limpio$variable_ordinal <- as.factor(df_limpio$variable_ordinal) 
+
+class(variable_numerica)
+  
+class(variable_ordinal)
+```
+
+Aplicar función str() a df_limpio para ver la estructura que resulta después de aplicar los filtros.
+
+```{r}
+
+```
+
+Coercionar columnas de vuelta a sus clases correctas con la funcion mutate().
+
+```{r}
+
+```
+
+También podemos filtrar objetos usando funciones básicas de R. Podemos, por ejemplo, utilizar un filtro booleano (lógico) sobre un objeto. Tomar columna de la variable numérica del data frame sucio utilizando el operador \$, filtrar observaciones.
+
+Ejecutar operación lógica variable_dummy == 0 en la consola
+
+Usar vector booleano para filtrar las filas del data frame.
+
+```{r}
+
+df_sucio_filtrado <- df_sucio[!is.na(df_sucio$variable_numerica),]
+
+
+df_sucio_filtrado <- df_sucio[df_sucio$variable_numerica > 0,]
+```
+
+Podemos encadenar operaciones lógicas para agregar filtros de forma simultanea. Filtrar df_sucio para las filas con valores mayores a 0 en variable_numerica e iguales a cero en variable_dummy
+
+```{r}
+
+```
+
+5\) Crear una nueva variable estandarizando los valores de variable_numerica. Nombrarla variable_numerica_std y agregar como una nueva columna al data frame limpio.
+
+Hagalo con el operador \$ y luego repita la instrucción con dplyr y la función mutate()
+
+```{r}
+
+df_limpio$variable_numerica_std <- (df_limpio$variable_numerica - mean(df_limpio$variable_numerica)) / sd(df_limpio$variable_numerica)
+
+df_limpio <- df_limpio %>%
+  mutate(variable_numerica_std = (variable_numerica - mean(variable_numerica)) / sd(variable_numerica))
+
+```
+
+5\) Tomar el promedio de variable_numerica. Ver la covarianza entre variable_cuenta y variable_dummy, luego ver correlación entre variable_numerica y variable_cuenta.
+
+```{r}
+
+mean(df_limpio$variable_numerica)
+
+cov(df_limpio$variable_cuenta, df_limpio$variable_dummy)
+
+cor(df_limpio$variable_numerica, df_limpio$variable_cuenta)
+
+```
+
+6\) Tomar media condicional de la variable_cuenta por color. Utilizar función group_by() y summarize() de dplyr. Guardar como una nuevo data frame llamado promedio_color. Imprimir data frame.
+
+```{r}
+
+promedio_color <- df_limpio %>%
+  group_by(variable_nominal) %>%
+  summarize(promedio = mean(variable_cuenta))
+
+print(promedio_color)
+```
+
+6\) Graficar la distribución de variable_numerica_std y variable_cuenta en un mismo gráfico utilizando ggplot2 y la función geom_histogram(). Asignar un color diferente a cada histograma y utilizar alpha = 0.5 para dar transparencia a las barras.
+
+```{r}
+
+ggplot(data = df_limpio, aes(x=variable_cuenta)) +
+  geom_histogram(fill = "cyan4", alpha = 0.5) +
+  geom_histogram(aes(x=variable_numerica_std), fill = "lightcoral", alpha = 0.5, bins= 100) +
+  
+
+```
+
+### Simular datos de distribuciones
+
+1\) Obtener los puntajes z de una distribución normal estándar (0,1) para un intervalo de confianza de 0.9, 0.95 y 0.99 para prueba de una cola (one-tailed). Utilizar funcion qnorm().
+
+```{r}
+
+z_one_lower <- qnorm(c(0.9, 0.95, 0.99), mean=0, sd=1)
+
+z_one_upper <- qnorm(c(0.9, 0.95, 0.99), mean=0, sd=1, lower.tail=FALSE)
+
+print(z_one_lower)
+
+print(z_one_upper)
+
+```
+
+2\) Repetir ejercicio anterior para dos colas (two-tailed)
+
+```{r}
+
+z_two_lower <- qnorm(c(0.95, 0.975, 0.995), mean=0, sd=1)
+
+z_two_upper <- qnorm(c(0.95, 0.975, 0.995), mean=0, sd=1, lower.tail=FALSE)
+
+print(z_two_upper)
+
+print(z_two_lower)
+
+```
+
+3\) Obtener los percentiles (o cuantiles) asociados a los puntajes estándar desde el -3 hasta el 3 (solo números enteros). Utilizar función pnorm().
+
+```{r}
+
+percentiles <- pnorm(-3:3, mean=0, sd=1)
+
+print(percentiles)
+
+```
+
+4\) Graficar una distribución normal estándar a partir de las densidades de los puntajes z en el intervalo de -3 hasta 3. Utilizar función dnorm() y la función seq(). Implementar saltos de 0.01 con la función seq() para obtener 600 puntos en el intervalo solicitado con la función dnorm().
+
+```{r}
+
+densidad <- dnorm(seq(-3, 3, length.out=600), mean=0, sd=1)
+```
+
+Ahora, graficar densidades. Agregar lineas verticales al gráfico representando los intervalos de confianza calculados en la pregunta 2. Utilizar un color diferente para cada intervalo.
+
+```{r}
+
+densidad_df <- data.frame(densidad = densidad, z = seq(-3, 3, by=0.01))
+
+ggplot(data = densidad_df, aes(x=z, y=densidad))+
+  geom_line() +
+  geom_vline(aes(xintercept=z_two_lower[1]), color="cyan4")+
+  geom_vline(aes(xintercept=z_two_lower[2]), color="lightcoral")+
+  geom_vline(aes(xintercept=z_two_lower[3]), color="gold") +
+  geom_vline(aes(xintercept=z_two_upper[1]), color="cyan4")+
+  geom_vline(aes(xintercept=z_two_upper[2]), color="lightcoral")+
+  geom_vline(aes(xintercept=z_two_upper[3]), color="gold")+
+  theme_minimal()
+```

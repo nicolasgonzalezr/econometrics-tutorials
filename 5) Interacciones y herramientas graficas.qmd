@@ -1,0 +1,391 @@
+---
+title: "Sesion 5, Interacciones, intervalos de confianza y herramientas gráficas"
+format: docx
+---
+
+# Sesión 5, Interacciones, intervalos de confianza y herramientas gráficas
+
+## Instrucciones
+
+Responder al siguiente caso completando cada una de las preguntas con los códigos y las justificaciones solicitadas. Los scripts con sus respuestas deben ser cargados al repositorio del curso para la evaluación. El nombre del archivo debe ir en el formato "tarea_5_nombre_apellido.qmd". Los archivos deben ser cargados hasta el día domingo 12 de mayo. Cada día de atraso en la entrega implicará un descuento de 1 décima en la nota de la tarea.
+
+### Cargar librerias al entorno de trabajo
+
+Cargar librería tidyverse para poder graficar con ggplot2 y modificar data frames con dplyr. También utilizaremos la librería wooldridge para obtener los datos con los que trabajaremos.
+
+```{r}
+
+if (!require(tidyverse)) {
+  install.packages("tidyverse")
+}
+
+if (!require(wooldridge)) {
+  install.packages("wooldridge")
+}
+
+library(tidyverse)
+library(wooldridge)
+```
+
+## Wage
+
+Trabajaremos con variables similares a la sesión anterior. Pero esta vez nos enfocaremos en las variables de educación y experiencia como predictores de los ingresos.
+
+**1)** Cargar wage1 de la librería wooldridge.
+
+```{r}
+
+data('wage1')
+
+?wage1
+```
+
+**2)** Seleccionar lwage, educ, exper, expersq y female con la función select().
+
+```{r}
+
+wage1 <- wage1 %>%
+  select(lwage, educ, exper, expersq, female)
+```
+
+### Exploración gráfica de las variables: la regresión local polinomial
+
+En la sesión anterior, la teoría nos nos indicaba que incluir un término cuadrático era razonable para experiencia y educación. Sin embargo, también podemos obtener esta intuición a partir de información gráfica exploratoria.
+
+**1)** Graficar lwage contra exper con ggplot() **(1 punto)**.
+
+-   Incluir una recta de regresión con geom_smooth() y method="lm".
+
+-   Adicionalmente, ajustar una curva de regresión local polinomial con geom_smooth() y method="loess". Asignar un color diferente que a la recta anterior.
+
+**LOESS (Locally Estimated Scatterplot Smoothing)**, también conocida como una regresión local polinomial, ajusta múltiples modelos lineales a pequeños segmentos de la función. Genera, así, muchas pendientes que le dan una forma suave al gráfico.
+
+```{r}
+
+```
+
+**2)** Graficar lwage contra educ con ggplot() **(1 punto)**.
+
+-   Incluir una recta de regresión con geom_smooth() y method="lm".
+
+-   Ajustar una curva de regresión local polinomial con geom_smooth() y method="loess". Asignar un color diferente que a la recta anterior.
+
+```{r}
+
+```
+
+**3)** Ajustar modelo lm() de lwage contra female, educ, exper y expersq. Asignar a "modelo_wage" **(1 punto)**.
+
+```{r}
+
+```
+
+## Graficar modelos complejos
+
+Para graficar efectos en modelos mútiples de forma clara, debemos recordar generar condiciones ceteris paribus. Esto es, debemos seleccionar nuestras variables de interés para graficar y mantener todas las demás variables en un valor constante de interés teórico. Por ejemplo, la media o mediana.
+
+### Graficar efectos no lineales
+
+Grafiquemos el efecto marginal de la experiencia sobre el logarítmo de los ingresos. Para esto, crearemos un data frame con valores artificiales de nuestras variables para luego implementar un ajuste de nuestro modelo anterior.
+
+**1)** Crear secuencia de 50 valores desde el mínimo de exper hasta el máximo de exper. Utilizar la función seq() con los argumentos from, to y length.out. Asignar a "exper" **(1 punto)**.
+
+```{r}
+
+```
+
+**2)** Asignar a "expersq" el cuadrado de exper **(1 punto)**.
+
+```{r}
+
+```
+
+**3)** Asignar a "educ" y "female" las medias de wage1\$educ y wage1\$female **(1 punto)**.
+
+```{r}
+
+```
+
+**4)** Crear data frame con exper, expersq, educ y female. Asignar columnas con los mismos nombres. Llamar df_cuadratico **(1 punto)**.
+
+```{r}
+
+```
+
+**5)** Tomar valores ajustados de modelo_wage contra los nuevos datos de df_cuadratico con la función predict() y el argumento newdata. Asignar a nueva columna en df_cuadratico llamada "fitted" **(1 punto)**.
+
+```{r}
+
+```
+
+6\) Crear un scatterplot de lwage contra exper con ggplot() **(1 punto)**.
+
+-   Incluir geom_line() con data=df_cuadratico y aes(x=exper, y=fitted)
+
+```{r}
+
+```
+
+## Modelos con interacciones
+
+### Interacciones con variables dummies
+
+Sabemos que hay diferencias en ingresos entre mujeres y hombres. En esta línea, también nos interesaría averiguar si el retorno de la educación y la experiencia es igual para mujeres que para hombres. Para evaluar esta hipótesis, necesitamos incuir términos de interacción a nuestro modelo.
+
+**1)** Repetir el modelo anterior incluyendo interacciones. Incluimos interacciones a una regresión con el operador de multiplicación (\*). Asignar a "modelo_female".
+
+-   Incluir interacción entre educ y female
+
+-   Incluir interacción entre exper y female
+
+Cuando creamos una interacción, siempre debemos incluir las variables en su forma singular (si lo olvidan R lo hará por ustedes) **(1 punto)**.
+
+```{r}
+
+```
+
+**2)** Interpretar coeficientes del modelo **(2 puntos)**.
+
+*Ojo, para interpretar las interacciones hay que interpretar también ambos coeficientes en su forma singular.*
+
+#### Graficar interacciones con variables dummies
+
+Para graficar el efecto de una interacción, tenemos que repetir el proceso para graficar modelos complejos. No obstante, esta vez debemos generar variabilidad en las 3 variables de interés. Graficaremos la interacción entre experiencia y sexo.
+
+**1)** Generar secuencia de valores desde el mínimo de exper hasta el máximo de exper. Asignar a "exper" **(2 puntos)**.
+
+-   Utilizar la función seq() para generar 50 valores.
+
+-   Envolver la función seq() en la función rep()
+
+Utilizamos la función rep() porque debemos repetir la secuencia para cada nivel de la variable dummy.
+
+```{r}
+
+```
+
+**2)** Crear "expersq" con el cuadrado de exper **(1 punto)**.
+
+```{r}
+
+```
+
+**3)** Crear "female" como un vector donde los primeros 50 valores correspondan a 0 y los segundos 50 valores correspondan a 1. Utilizar función rep() y argumento each. **(2 puntos)**.
+
+```{r}
+
+```
+
+**4)** Asignar a "educ" la media de wage1\$educ **(1 punto)**.
+
+```{r}
+
+```
+
+**5)** Crear data frame "df_interaccion" con columnas para cada una de las 4 variables anteriores **(1 punto)**.
+
+```{r}
+
+```
+
+**6)** Tomar valores ajustados de modelo_female contra los nuevos datos de df_interaccion con la función predict() y el argumento newdata. Asignar a nueva columna en df_interaccion llamada "fitted" **(1 punto)**.
+
+```{r}
+
+```
+
+**7)** Repetir gráfico del modelo complejo. Transformar columna female en factor antes de graficar y asignar al argumento color **(2 puntos)**.
+
+```{r}
+
+```
+
+**8)** Interpretar gráfico con interacción. Hacer alusión a coeficientes del modelo **(2 puntos)**.
+
+### Interacciones entre variables numéricas
+
+Por otra parte, también nos interesaría saber si la experiencia laboral tiene un retorno diferente para aquellas personas que hayan completado cierto nivel educativo. Queremos ver si aquellos que tienen estudios por sobre la enseñanza media (12 años) perciben un retorno mayor de cada año adicional de experiencia laboral.
+
+*Ojo: Las interpretaciones de interacciones entre variables numéricas son complejas y deben hacerse con cuidado.*
+
+Lo primero que haremos será reescalar nuestra variable educ para que esté centrada en torno al 12.
+
+**1)** Crear nueva columna en wage1 llamada "educ_centered". Esta columna corresponderá a los valores de la columna educ - 12 **(1 punto)**.
+
+```{r}
+
+```
+
+**2)** Volver a ajustar un modelo lineal de lwage. Asignar a modelo_educ_exper. Guardar summary() como summary_educ_exper. Imprimir **(1 punto)**.
+
+Ajustar contra:
+
+-   exper
+
+-   expersq
+
+-   educ_centered
+
+-   educ_centered\*exper
+
+-   female
+
+```{r}
+
+```
+
+En este modelo, $\beta_{educ}$ es el efecto parcial de un año adicional de educación cuando la experiencia es cero.
+
+Por otra parte, $\beta_{exper}+2\beta_{expersq} \times exper$ es el efecto parcial de un año de experiencia para una persona con una educación de 12 años.
+
+Finalmente, $\beta_{exper}+2\beta_{expersq} \times exper + \beta_{exper*educ} \times educ$ es el efecto parcial de un año de experiencia para una persona con una educación por sobre o debajo de 12 años. El hecho que $\beta_{exper*educ}$ tenga signo negativo nos dice que el retorno de la experiencia para personas con escolaridad por debajo de los 12 años será mayor que para las personas con escolaridad por encima de los 12 años. Aunque esta relación no es estadísticamente significativa.
+
+**3)** Interpretar resultados del modelo **(3 puntos)**.
+
+#### Graficar interacciones entre variables numéricas
+
+Para graficar esta interacción, generaremos 5 valores de interés para la variable educación, y veremos el efecto marginal de experiencia para estos 5 valores.
+
+**1)** Generar secuencia de valores desde el mínimo de exper hasta el máximo de exper. Asignar a "exper" **(2 puntos)**.
+
+-   Utilizar la función seq() para generar 50 valores.
+
+-   Envolver la función seq() en la función rep(). Repetir 5 veces.
+
+```{r}
+
+
+```
+
+**2)** Crear "expersq" con el cuadrado de exper **(1 punto)**.
+
+```{r}
+
+
+```
+
+**3)** Crear "educ_centered" como un vector c() donde haya 50 valores para los niveles -4, -2, 0, 2 y 4. Utilizar función rep() **(2 puntos)**.
+
+```{r}
+
+
+```
+
+**4)** Asignar a "female" la media de wage1\$female **(1 punto)**.
+
+```{r}
+
+
+```
+
+**5)** Crear data frame "df_educ_exper" con columnas para cada una de las 4 variables anteriores **(1 punto)**.
+
+```{r}
+
+
+```
+
+**6)** Tomar valores ajustados de modelo_educ_exper contra los nuevos datos de df_educ_exper con la función predict() y el argumento newdata. Asignar a nueva columna en df_educ_exper llamada "fitted" **(1 punto)**.
+
+```{r}
+
+```
+
+**7)** Repetir sintáxis para graficar la interacción dummy **(2 puntos)**.
+
+```{r}
+
+
+```
+
+**8)** Interpretar gráfico **(2 puntos)**.
+
+## Construcción de intervalos de confianza
+
+Si tomaramos muchas muestras de la población y para cada muestra tomaramos una estimación del parámetro poblacional, el intervalo de confianza nos informa el rango de valores donde encontraríamos las estimaciones de dicho parámetro en x% de las instancias. Bajo la hipótesis nula $\beta_j=0$, encontramos evidencia en contra de dicha hipótesis cuando nuestro intervalo de confianza no incluye el 0.
+
+Calculemos el intervalo de confianza para nuestra interacción entre experiencia y educación.
+
+**1)** Tomar coeficiente de la interacción entre experiencia y educación. Asignar a "beta". Imprimir **(1 punto)**.
+
+```{r}
+
+
+```
+
+**2)** Tomar error estándar de la interacción entre experiencia y educación. Asignar a "error". Imprimir **(1 punto)**.
+
+```{r}
+
+
+```
+
+**3)** Tomar grados de libertad del modelo. Asignar a "df". Imprimir **(1 punto)**.
+
+```{r}
+
+
+```
+
+**4)** Definir percentil deseado (dos colas) para nuestro intervalo de confianza. Utilizar 95%. Asignar a "percentil". Imprimir **(1 punto)**.
+
+*Ojo, cuando usamos dos colas dividimos nuestro alfa en 2.*
+
+```{r}
+
+
+```
+
+**5)** Calcular estadístico t asociado al percentil deseado con la función qt(). Asignar a "valor_t". Imprimir **(1 punto)**.
+
+```{r}
+
+
+```
+
+**6)** Crear vector con c() que contenga dos valores calculados con la formula para el intervalo de confianza. Asignar a "intervalo_confianza". Imprimir **(1 punto)**.
+
+$$
+\hat\beta_j \pm c \cdot se(\hat \beta_j)
+$$
+
+```{r}
+
+
+```
+
+**7)** Interpretar intervalo de confianza **(1 punto)**.
+
+#### Intervalo de confianza de una cola
+
+Digamos que nuestra hipótesis era que las personas con escolaridad por debajo de los 12 años se benefician más de la experiencia laboral. Por lo tanto, nos interesa construir un intervalo de confianza de una cola. Nuestra hipótesis nula es $\beta_j \geq 0$. Por lo tanto, solo rechazaremos H0 para valores estrictamente negativos de beta.
+
+**1)** Tomar percentil de 95% para una cola. Asignar a "percentil". Imprimir **(1 punto)**.
+
+```{r}
+
+
+```
+
+**2)** Calcular estadístico t asociado al percentil deseado con la función qt(). Asignar a "valor_t". Imprimir **(1 punto)**.
+
+```{r}
+
+
+```
+
+**3)** Crear vector con c() que vaya desde -Inf hasta beta más el valor t multiplicado por el error. Asignar a "intervalo_confianza". Imprimir **(1 punto)**.
+
+```{r}
+
+```
+
+**4)** Interpretar intervalo de confianza de una cola de la interacción entre experiencia y educación **(2 puntos)**.
+
+#### Breve nota sobre intervalo de confianza vs valor p
+
+Interpretamos el intervalo de confianza como el porcentaje de veces que encontraremos un valor de beta dentro del intervalo calculado en el muestreo.
+
+En contraparte, interpretamos el valor p como el porcentaje de veces en que encontraremos un valor de beta al menos tan extremo como el observado en el muestreo si la hipótesis nula es correcta.
+
+Para hacer contraste de hipótesis de una cola de forma rápida mirando una tabla de regresión, basta dividir el valor p calculado en 2.

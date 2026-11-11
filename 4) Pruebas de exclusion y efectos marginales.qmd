@@ -1,0 +1,492 @@
+---
+title: "Sesion 4, Efectos marginales y pruebas de exclusion"
+format: docx
+---
+
+# Sesión 4, Efectos marginales y pruebas de exclusion
+
+## Instrucciones
+
+Responder al siguiente caso completando cada una de las preguntas con los códigos y las justificaciones solicitadas. Los scripts con sus respuestas deben ser cargados al repositorio del curso para la evaluación. El nombre del archivo debe ir en el formato "tarea_4_nombre_apellido.qmd". Los archivos deben ser cargados hasta el día viernes 09 de mayo. Cada día de atraso en la entrega implicará un descuento de 1 décima en la nota de la tarea.
+
+### Cargar librerias al entorno de trabajo
+
+Cargar librería tidyverse para poder graficar con ggplot2 y modificar data frames con dplyr. También utilizaremos la librería wooldridge para obtener los datos con los que trabajaremos; y la librería stargazer para crear tablas de nuestros modelos.
+
+```{r}
+
+if (!require(tidyverse)) {
+  install.packages("tidyverse")
+}
+
+if (!require(wooldridge)) {
+  install.packages("wooldridge")
+}
+
+if (!require(stargazer)) {
+  install.packages("stargazer")
+}
+
+
+library(tidyverse)
+library(wooldridge)
+library(stargazer)
+```
+
+## Beauty
+
+En esta sesión trabajaremos con el data set beauty del paquete wooldridge. Estos datos fueron recolectados para evaluar si el atractivo físico tiene una influencia sobre los ingresos de las personas. Esta será la pregunta que intentaremos responder el día de hoy.
+
+**1)** Comenzaremos cargando los datos a nuestro entorno de trabajo con el comando data(''). Este comando asigna automáticamente el nombre del objeto, por lo cual no hay que crear el objeto del data frame.
+
+```{r}
+
+data('beauty')
+```
+
+Utilicemos el comando de help para acceder a la documentación del data set y entender las variables.
+
+```{r}
+
+?beauty
+```
+
+Seleccionemos las variables con las que trabajaremos y eliminemos las variables preprocesadas para no comenzar con trampa con la función select() de dplyr.
+
+```{r}
+
+beauty <- beauty %>%
+  select(wage, looks, educ, exper, female, married, goodhlth)
+```
+
+Nuestra variable explicada será wage y nuestra variable explicativa será looks.
+
+**2)** Grafiquemos estas variables con ggplot() para entender su comportamiento. Tomemos sus histogramas con geom_histogram() **(2 puntos)**.
+
+-   Tomar histograma de wage
+
+-   Tomar histograma de looks
+
+```{r}
+
+
+```
+
+Vemos que los ingresos parecen seguir una distribución log normal. No obstante, preferiríamos que nuestra variable de respuesta no tenga skewness para incrementar la posibilidad de que los errores distribuyan de forma normal y reducir las posibilidades de que presente heterocedasticidad.
+
+**3)** **a)** Tomar el logaritmo de la variable wage y asignar a nueva columna "lwage" en el data frame beauty **(1 punto)**.
+
+```{r}
+
+
+```
+
+**b)** Graficar histograma de lwage con ggplot() y geom_histogram() para verificar la nueva distribución de la variable **(1 punto)**.
+
+```{r}
+
+
+```
+
+### Estadísticas descriptivas
+
+Tomemos estadísticas descriptivas para identificar tendencias generales.
+
+**4)** **a)** Tomar summary() del data frame beauty. Seleccionar variables wage, looks, educ, exper y female con select() para que el output sea ordenado. Utilizar operador pipe %\>% **(1 punto)**.
+
+```{r}
+
+
+```
+
+**b)** Tomar matriz de correlaciones del data frame beauty con la función cor(). Seleccionar variables lwage, looks, educ, exper y female con select() para que el output sea ordenado. Utilizar operador pipe %\>% **(1 punto)**.
+
+```{r}
+
+
+```
+
+### Modelo simple
+
+Comencemos graficando la relación entre ingresos y atractivo para ver si observamos alguna tendencia evidente.
+
+**1) a)** Crear un gráfico de wage (y) contra looks (x) con ggplot(). Utilizar geom_jitter() para graficar puntos y ajustar una recta con geom_smooth(method="lm"). Utilizamos geom_jitter() en lugar de geom_point() porque solo tenemos 5 niveles de atractivo, y esperamos que muchos puntos esten sobrepuestos. Elegir un color y agregar título y etiquetas a los ejes del gráfico. Utilizar siempre theme_minimal() **(1 punto)**.
+
+```{r}
+
+```
+
+**b)** Repetir gráfico anterior para "lwage" **(1 punto)**.
+
+```{r}
+
+```
+
+**c)** Interpretar los gráficos de los puntos a) y b), y las diferencias entre ellos en caso de observar alguna **(1 punto)**.
+
+**2)** **a)** Ajustar un modelo simple de lwage contra looks. Guardar resultado como "modelo_simple". Imprimir summary() del modelo **(1 punto)**.
+
+```{r}
+
+```
+
+**b)** Interpretar intercepto y coeficiente beta uno del modelo. Recordar interpretación de modelos de semi-elasticidad constante (log-level) **(1 punto)**.
+
+$$
+\% \Delta y = (100\beta)\Delta x
+$$
+
+**Tips:**
+
+-   Interpretar el intercepto transformándolo de vuelta a level con la función exp().
+
+-   La interpretación de los modelos de elasticidad constante es en porcentajes de cambio, **no en puntos porcentuales**.
+
+![](images/Modelos%20de%20elasticidad%20constante.png)
+
+**c)** ¿Cual es el efecto sobre lwage cuando looks cambia de 1 a 5?
+
+**Ojo**: La interpretación de los modelos de elasticidad constante tiene una limitación. A medida que el cambio en el logaritmo se vuelve más grande, la aproximación $\%\Delta y \approx 100 \cdot\Delta log(y)$ se vuelve menos precisa. Para calcular un porcentaje de cambio exacto, usamos la formula:
+
+$$
+\% \Delta \hat{y} = 100 \cdot [exp(\hat{\beta} \Delta x)-1]
+$$
+
+#### Predictor ordinal
+
+La variable atractivo esta codificada del 1 al 5. Podriamos sentirnos tentados a tratar esta variable como continua. No obstante, nadie nos asegura que los intervalos entre los puntajes sean equivalentes entre si. ¿Es una persona con looks=2 la mitad de atractivo/a que una persona con looks=4?
+
+#### Estandarización
+
+Una alternativa para trabajar con variables de baja interpretabilidad es la estandarización. Si transformamos las observaciones de atractivo a puntajes z, podemos interpretar el cambio en la variable dependiente ante un cambio de 1 desviación estándar en el predictor.
+
+**1)** Estandarizar la variable looks, creando una nueva columna en el data frame llamada "looks_std" **(1 punto)**.
+
+```{r}
+
+```
+
+**2)** a) Volver a ajustar un modelo simple de lwage contra la variable estandarizada. Guardar resultado como "modelo_simple_std". Imprimir summary() del modelo **(1 punto)**.
+
+```{r}
+
+
+```
+
+**b)** Interpretar resultados del modelo lwage contra looks_std **(1 punto)**.
+
+#### **Predictor categórico**
+
+No obstante, para un predictor categórico con pocos niveles, como es este caso, lo más apropiado es transformarlo en un conjunto de variables dummies.
+
+**1)** Desagregar columna looks en 5 columnas diferentes en el data frame, donde cada nueva columna corresponda a una variable dummy indicando si looks es equivalente a cierto puntaje. Nombrar a las nuevas columnas "looks_1", "looks_2", "looks_3", "looks_4" y "looks_5".
+
+Por lo tanto, si una observación tiene looks == 2, tendrá un valor de 1 en la columna looks_2 y 0 en todas las demás columnas. Utilizar función ifelse() y mutate() para crear las nuevas columnas en el data frame **(2 puntos)**.
+
+```{r}
+
+```
+
+**2)** **a)** Volver a ajustar un modelo simple, esta vez de lwage contra el conjunto de nuestras variables dummies. Para ajustar este modelo, debemos elegir 4 de las 5 variables dummies. El nivel de la variable que no incluyamos será absorbido por el intercepto de nuestro modelo. Utilizaremos el valor medio "looks_3" como línea de base. Guardar resultado como "modelo_ordinal". Imprimir summary() del modelo **(2 puntos)**.
+
+```{r}
+
+```
+
+**b)** Interpretar intercepto y coeficiente beta uno del modelo. Recordar interpretación de modelos de elasticidad constante **(1 punto)**.
+
+### Modelo controles
+
+Ahora vamos a agregar controles a nuestro modelo. Nos interesa incluir dos tipos de variables de control. En primer lugar, queremos incluir variables omitidas (aquellas que intuimos pueden estar correlacionadas con nuestro predictor y con el error).
+
+Por otra parte, también nos interesa incluir variables que solo están correlacionadas con nuestra variable predicha, y por lo tanto reducen el error (incrementan la varianza explicada) sin introducir colinealidad. Incrementan, por lo tanto, el ratio de señal a ruido de nuestro modelo.
+
+En este caso, tenemos pocos candidatos fuertes para variables omitidas. Por una parte, podríamos pensar que la salud de las personas influye sobre su energía en el trabajo y también sobre su atractivo. Además, sabemos que la experiencia se asocia con la edad, y podríamos pensar que la edad tiene una relación con el atractivo. Dos intuiciones algo más débiles podrían ser que las medias de atractivo son diferentes para mujeres y hombres, o para personas casadas y no casadas.
+
+Por otra parte, tenemos una variable que intuimos podría estar asociada con nuestra variable de respuesta y tiene el potencial de reducir el error de nuestro modelo sin afectar la eficiencia de nuestro estimador de interés. Sabemos que la educación tiene una influencia directa sobre los ingresos, y, si no hubieramos visto la tabla de correlaciones, no tendríamos buenas razones para creer que tenga alguna relación con el atractivo físico.
+
+**1)** a) Ajustar un nuevo modelo incluyendo controles para sexo, estado civil, salud, educación y experiencia. Asignar a objeto "modelo_controles". Imprimir summary() del modelo **(2 puntos)**.
+
+Incluir:
+
+-   female
+
+-   married
+
+-   goodhlth
+
+-   educ
+
+-   exper
+
+Esperamos que educación y experiencia tengan colinealidad. Para educarse más hay que sacrificar entrar tempranamente al mundo laboral. Asimismo, esperamos que el sexo este asociado con la experiencia. En promedio, las mujeres renuncian a más años laborales que los hombres debido a la maternidad. No obstante, ya que no esperamos que estén fuertemente asociados con atractivo, esto no es un problema. Solo nos preocupa la colinealidad cuando afecta la eficiencia sobre nuestra variable de interés. No nos preocupa la eficiencia de los estimadores de nuestras variables de control.
+
+```{r}
+
+```
+
+**b)** Interpretar coeficientes del modelo y aludir a los cambios (si los hay) respecto del modelo simple **(2 puntos)**.
+
+#### Efectos cuadráticos
+
+Un efecto cuadrático es otra forma de dar cuenta de los comportamientos no lineales de las variables. En particular, un término cuadrático permite capturar efectos crecientes o decrecientes de las variables. En términos matemáticos, el efecto marginal de una variable con un término cuadrático corresponde a:
+
+$$
+\frac{\partial{y}}{\partial{x_1}} = \frac{\partial{\beta_0}}{\partial{x_1}} +  \frac{\partial{\beta_1x_1}}{\partial{x_1}} + \frac{\partial{\beta_2x^2_1}}{\partial{x_1}} \\
+\frac{\partial{y}}{\partial{x_1}} = \beta_1 + 2\beta_2x_1
+$$
+
+Esto quiere decir que el efecto marginal de "x" sobre "y" depende del valor de "x", y se encuentra asociado a una pendiente que no es lineal a lo largo del dominio de x.
+
+*Ojo, siempre que sospechamos un efecto creciente o decreciente (cuadrático), tenemos que incluir la variable no transformada. Una relación perfectamente lineal entre variables puede aparentar un efecto cuadrático si se omite la variable no transformada (sesgo).*
+
+En nuestro modelo, tenemos razones para pensar que el rendimiento marginal de un año más de educación y un año más de experiencia sobre los ingresos puede no ser constante. En ambos casos, podríamos pensar que los primeros años de educación y experiencia tienen un efecto mayor sobre los ingresos que los años posteriores (efecto marginal decreciente).
+
+**2)** **a)** Ajustar un nuevo modelo agregando términos cuadráticos para educ y exper. Incluir variables en la regresión con la sintáxis I(x\^2). Asignar a "modelo_cuadratico". Imprimir summary() del modelo **(1 punto)**.
+
+```{r}
+
+
+```
+
+**b)** Interpretar efectos marginales de educ y exper sobre lwage. **(2 puntos).**
+
+## Pruebas de exlusión y parsimonia del modelo
+
+Vemos que nuestro modelo tiene algunas variables significativas, y otras que no lo son. Lo que nos gustaría saber es si las variables que parecen no contribuir al poder explicativo del modelo son relevantes en su conjunto o si podemos descartarlas. Para esto, hacemos pruebas de exclusión con el test F o el test LM (Lagrange Multipliers).
+
+Antes de ejecutar las pruebas, debemos saber si nos enfrentamos a un modelo heterocedástico. Por defecto, estaremos inclinados a hacer una prueba con el estadístico F. No obstante, este estadístico no es válido bajo heterocedasticidad. En dichos casos, podemos utilizar la prueba LM robusta a heterocedasticidad.
+
+#### Prueba de White de heterocedasticidad
+
+Repetimos la prueba de White, al igual que en la sesión anterior.
+
+**1)** Tomamos residuos y valores ajustdos.
+
+```{r}
+
+
+```
+
+**2)** Tomamos cuadrados de residuos y valores ajustados.
+
+```{r}
+
+```
+
+**3)** Creamos un nuevo data frame "df_white" para no ensuciar nuestro data frame principal.
+
+```{r}
+
+```
+
+**4)** Ajustamos un modelo polinómico de nuestros residuos cuadrados contra los valores ajustados e interpretamos significancia de la regresión.
+
+```{r}
+
+
+```
+
+Interpretamos el estadístico F de nuestro modelo de White sobre los residuos cuadrados. Vemos que no se observa evidencia en contra de la hipótesis nula que el modelo es homocedástico. Podemos, por lo tanto, implementar una prueba F.
+
+### Prueba F
+
+Cuando agregamos predictores a un modelo, sabemos que la suma de residuos caerá y el coeficiente de determinación crecerá, sin importar que los predictores correspondan a la forma verdadera de la función. La intuición detrás de una prueba de F corresponde a verificar si la diferencia entre la varianza explicada del modelo con y sin los predictores que queremos poner a prueba es suficiente para justificar su permanencia en la función de regresión.
+
+Es importante observar que esta prueba solo es válida para modelos anidados. Esto es, modelos en que la restricción impuesta corresponde a un subconjunto del modelo no restringido.
+
+En nuestro modelo, vemos que married y goodhlth no parecen buenos predictores del ingreso. Adicionalmente, vemos que al incluir educación al cuadrado redujimos la significancia práctica y estadística de nuestro estimador de educación.
+
+**1)** Ajustar un modelo restringido, donde exluiremos las variables cuyos resultados no fueron significativos en modelo_controles y modelo_cuadratico. Imprimir summary() del modelo **(1 punto)**.
+
+Excluir:
+
+-   married
+
+-   goodhlth
+
+-   I(educ\^2)
+
+```{r}
+
+```
+
+Ahora estamos listos para calcular nuestro estadístico F:
+
+$$
+F=\frac{\frac{(SSR_r-SSR_{ur})}{q}}{\frac{SSR_{ur}}{n-k-1}}=\frac{SSR_r-SSR_{ur}}{SSR_{ur}}\times \frac{n-k-1}{q}
+$$
+
+**2) a)** Tomar SSR del modelo restringido, asignar a objeto "SSR_r" **(1 punto)**.
+
+```{r}
+
+
+```
+
+**b)** Tomar SSR del modelo no restringido (modelo_cuadratico), asignar a objeto "SSR_ur" **(1 punto)**.
+
+```{r}
+
+
+```
+
+**c)** Asignar a "q" el número de variables excluidas (3) **(1 punto)**.
+
+```{r}
+
+```
+
+**d)** Asignar a "n_k_1" los grados de libertad del modelo no restringido. Pueden extraerlo del modelo con \$df.residual. Imprimir **(1 punto)**.
+
+```{r}
+
+```
+
+**e)** Calcular estadístico F con la formula provista y asignar a objeto "fstat". Imprimir **(1 punto)**.
+
+```{r}
+
+```
+
+**f)** Calcular significancia de fstat con la formula pf(), donde df1=q y df2=n_k_1. La función pf() nos entrega el percentil (CDF) de la distribución F en el valor deseado. Nos dice, por lo tanto, el porcentaje de valores de la distribución que son menores al estadístico calculado. Para transformarlo en un valor p, debemos sustraerlo de 1. Donde la interpretación pasa a ser el porcentaje de valores en la distribución que son al menos tan extremos como el observado **(1 punto)**.
+
+```{r}
+
+```
+
+**g)** Interpretar resultado de la prueba de F **(2 puntos)**.
+
+Recordar que nuestra hipótesis nula es:
+
+$$
+\beta_{married} = \beta_{goodhlth} = \beta_{educ^2} = 0
+$$
+
+### Prueba LM (Multiplicadores de Lagrange) robusta a heterocedasticidad
+
+Pero nuestro modelo aún no está terminado. Vimos que tener un atractivo por debajo del promedio parece tener una influencia negativa sobre los ingresos de las personas. Por otra parte, vimos que las personas con niveles de atractivo de 4 y 5 no parecen tener niveles de ingreso significativamente superiores comparados con aquellos de atractivo promedio. En principio, esto nos orienta hacia la conclusión que el atractivo tiene una influencia directa sobre los ingresos, pero solo hasta un nivel de atractivo promedio.
+
+Para ser rigurosos, nos interesaría ver si el conjunto de los niveles por sobre el promedio de atractivo tienen un efecto significativo sobre los ingresos. Para probar esta hipótesis, necesitamos hacer otra prueba de exlusión. Pese a que podríamos repetir la prueba de F, en esta ocasión lo haremos con la prueba LM robusta.
+
+**1)** Cambiar nombre a modelo_restringido para no causar confusión. Asignar a "modelo_lagrange".
+
+```{r}
+
+modelo_lagrange <- modelo_restringido
+```
+
+**2)** Ajustar un nuevo modelo restringido, donde se excluyan las variables looks_4 y looks_5. Al hacer esto, nuestro intercepto absorberá looks_3, looks_4 y looks_5. Por lo tanto, el intercepto de esta nueva regresión corresponderá al promedio de ingresos del conjunto de personas con atractivos de nivel 3, 4 y 5. Asignar resultado a "modelo_restringido_lagrange". Imprimir summary().
+
+```{r}
+
+modelo_restringido_lagrange <- lm(lwage ~ looks_1 + looks_2 + female + educ + exper + I(exper^2), data=beauty) 
+
+summary(modelo_restringido_lagrange)
+
+```
+
+**3)** Crear vector "residuos_lagrange" con los residuos de modelo_restringido_lagrange.
+
+```{r}
+
+residuos_lagrange <- modelo_restringido_lagrange$residuals
+```
+
+**4)** Ajustar una regresión de las variables exluidas (un modelo por cada variable) contra todas las variables incluidas (del modelo restringido).
+
+-   Asignar a "modelo_looks_4"
+
+-   Asignar a "modelo_looks_5"
+
+```{r}
+
+modelo_looks_4 <- lm(looks_4 ~ looks_1 + looks_2 + female + educ + exper + I(exper^2), data = beauty)
+
+modelo_looks_5 <- lm(looks_5 ~ looks_1 + looks_2 + female + educ + exper + I(exper^2), data = beauty)
+```
+
+**5)** Obtener residuos de los 2 modelos anteriores.
+
+-   Crear vector "residuos_looks_4"
+
+-   Crear vector "residuos_looks_5"
+
+```{r}
+
+residuos_looks_4 <- modelo_looks_4$residuals
+
+residuos_looks_5 <- modelo_looks_5$residuals
+```
+
+**6)** Multiplicar residuos_looks_4 y residuos_looks_5 por residuos_lagrange y asignar a vectores "excluida_1" y "excluida_2".
+
+```{r}
+
+excluida_1 <- residuos_looks_4*residuos_lagrange
+
+excluida_2 <- residuos_looks_5*residuos_lagrange
+```
+
+**7)** Crear vector llamado "one" de largo length(excluida_1) con valor 1 para todas las observaciones Utilizar función rep().
+
+```{r}
+
+one <- rep(1, times = length(excluida_1))
+```
+
+**8)** Crear data frame "LM_DF" con columnas para "one", "excluida_1" y "excluida_2".
+
+```{r}
+
+LM_DF <- data.frame(one=one, excluida_1=excluida_1, excluida_2=excluida_2)
+```
+
+**9)** Ajustar una regresión sin intercepto de "one" contra residuos_looks_4 y residuos_looks_5. Para ajustar una regresión sin intercepto usamos la sintáxis lm(y \~ x -1, data). Asignar a modelo_LM.
+
+```{r}
+
+modelo_LM <- lm(one ~ excluida_1 + excluida_2 - 1, data=LM_DF)
+```
+
+**10)** Tomar SSR de modelo_LM. Asignar a "SSR_LM". Imprimir.
+
+```{r}
+
+SSR_LM <- sum((modelo_LM$residuals)^2)
+
+print(SSR_LM)
+```
+
+**11)** Asignar "q" con el número de variables exluidas (2).
+
+```{r}
+
+q <- 2
+```
+
+**11)** Calcular estadístico LM restándo SSR_LM al número de observaciones. Estadístico sigue una distribución chi-cuadrado con "q" grados de libertad.
+
+```{r}
+
+LMstat <- nrow(beauty) - SSR_LM
+```
+
+**12)** Calcular signficancia de LMstat para una distribución chi-cuadrado con "q" grados de libertad con la función pchisq(). Al igual que la función pf(), la función pchisq() nos entrega el percentil del puntaje chi-cuadrado (CDF) obtenido, que tenemos que transformar en valor p sustrayendo de 1.
+
+```{r}
+
+1 - pchisq(LMstat, q)
+```
+
+**13)** Interpretar resultado del test e implicancia respecto de nuestra hipótesis **(2 puntos)**.
+
+### Conclusión
+
+1\) Imprimir tabla de regresión con modelo_ordinal, modelo_cuadratico, modelo_lagrange, y modelo_restringido_lagrange con la función stargazer() **(1 punto)**.
+
+```{r}
+
+```
+
+**TOTAL: 38 puntos**

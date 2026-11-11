@@ -1,0 +1,338 @@
+---
+title: "Sesión 8, Diferencias en diferencias"
+format: docx
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Sesión 8, Diferencias en diferencias
+
+## Instrucciones
+
+Responder al siguiente caso completando cada una de las preguntas con los códigos y las justificaciones solicitadas. Los scripts con sus respuestas deben ser cargados al repositorio del curso para la evaluación. El nombre del archivo debe ir en el formato "tarea_8_nombre_apellido.qmd". Los archivos deben ser cargados hasta el día domingo 16 de junio. Cada día de atraso en la entrega implicará un descuento de 1 décima en la nota de la tarea.
+
+#### Cargar librerias al entorno de trabajo
+
+Cargar librería tidyverse para poder graficar con ggplot2 y modificar data frames con dplyr. También utilizaremos la librería wooldridge para obtener los datos con los que trabajaremos.
+
+```{r echo=FALSE}
+
+if (!require(tidyverse)) {
+  install.packages("tidyverse")
+}
+
+if (!require(stargazer)) {
+  install.packages("stargazer")
+}
+
+if (!require(wooldridge)) {
+  install.packages("wooldridge")
+}
+
+library(tidyverse)
+library(stargazer)
+library(wooldridge)
+```
+
+## Experimentos naturales
+
+Un experimento natural ocurre cuando un evento exógeno--generalmente un cambio en una política gubernamental--cambia el entorno en que los individuos, familias, organizaciones o ciudades operan. Un experimento natural siempre tiene un grupo de control, el cual no se ve afectado por el cambio de la política, y un grupo de tratamiento, el cual se piensa que es afectado por el cambio en la política. A diferencia de un experimento verdadero, en que los grupos de control y tratamiento se asignan de manera aleatoria, los grupos de control y tratamiento en experimentos naturales emergen del cambio de la política en particular.
+
+### Diferencias en diferencias
+
+Para controlar por diferencias sistemáticas entre los grupos de control y tratamiento, se requieren dos mediciones--una antes y una después del cambio de política. Por lo tanto, la muestra se divide en 4 grupos: el grupo de control antes del cambio, el grupo de control después del cambio, el grupo de tratamiento antes del cambio y el grupo de tratamiento después del cambio.
+
+## Vouchers
+
+En 1990, Wisconsin comenzó a proporcionar vouchers a un pequeño número de estudiantes con bajos ingresos para asistir a escuelas privadas no sectarias. Controlando los efectos fijos individuales, se comparan los resultados de los alumnos seleccionados para asistir a una escuela privada con los de los solicitantes no seleccionados de las escuelas públicas de Milwaukee.
+
+Estos datos incluyen a los estudiantes que solicitaron entrar al programa de vouchers y fueron aceptados, los estudiantes que solicitaron y no fueron aceptados, y los estudiantes que fueron seleccionados y no asistieron. Los vouchers fueron asignados a los aplicantes por medio de un sorteo aleatorio.
+
+#### Cargar datos al entorno de trabajo
+
+**1)** Cargar datos de 'voucher' de la librería wooldridge con la función data().
+
+```{r}
+
+data('voucher')
+```
+
+Para conseguir la estructura de los datos en 4 grupos, tenemos que excluir de la muestra aquellas personas que fueron asignadas al tratamiento pero no accedieron a participar del programa de vouchers.
+
+**2)** Contar la cantidad de personas en cada combinación de haber sido seleccionados (select) y haber participado (choice) con dplyr **(1 punto)**.
+
+-   Agrupar voucher por select y choice con group_by()
+
+-   Tomar table() de select con summarize()
+
+-   Imprimir
+
+```{r}
+
+voucher %>%
+  group_by(select, choice) %>%
+  summarize(cuenta = table(select))
+```
+
+**3)** Filtrar base de datos excluyendo al grupo de personas que fueron seleccionadas y no participaron del programa de vouchers con la función subset(). Además, renombrar variable select como "voucher" con rename(). Este es nuestro tratamiento. Guardar data frame filtrado como "voucher_filtrado" **(1 punto)**.
+
+```{r}
+
+voucher_filtrado <- voucher %>%
+  subset(!(select == 1 & choice == 0)) %>%
+  subset(!(select == 0 & choice == 1)) %>%
+  rename(voucher=select)
+```
+
+Ahora tenemos que transformar nuestros datos a formato largo. Esto quiere decir que tendremos dos filas para cada observación, donde los puntajes de matemáticas de los dos períodos estarán en la misma columna.
+
+```{r}
+
+score_90 <- voucher_filtrado %>%
+  mutate(math = mnce90,
+         year_90 = 1,
+         year_94 = 0
+         ) %>%
+  select(-mnce, -mnce90)
+
+
+score_94 <- voucher_filtrado %>%
+  mutate(math = mnce,
+         year_90 = 0,
+         year_94 = 1
+         ) %>%
+  select(-mnce, -mnce90)
+
+voucher_long <- full_join(score_90, score_94) %>%
+  mutate(year = ifelse(year_94==1, 94, 90))
+```
+
+**4)** Ahora tomemos las medias condicionales con dplyr **(1 punto)**.
+
+Pasos a seguir
+
+-   Agrupar voucher_long por voucher y por year con la función group_by().
+
+-   Tomar medias condicionales de la columna "math" con la función summarize().
+
+-   Transformar la columna voucher a factor con as.factor() y mutate().
+
+-   Asignar resultado a "conditional_means".
+
+-   Imprimir conditional_means.
+
+```{r}
+
+conditional_means <- voucher_long %>%
+  group_by(voucher, year) %>%
+  summarize(math = mean(math, na.rm=TRUE)) %>%
+  mutate(voucher=as.factor(voucher))
+
+print(conditional_means)
+```
+
+**5)** Graficar math contra year de conditional_means con ggplot(). Asignar color segun voucher **(1 punto)**.
+
+```{r}
+
+ggplot(data=conditional_means, aes(x=year, y=math, color=voucher))+
+  geom_point(size=3)+
+  geom_line(linewidth=1)+
+  ggtitle("Diff in diff")+
+  xlab("Year")+
+  ylab("Math score")+
+  theme_minimal()
+```
+
+La formula del estimador de diferencias en diferencias corresponde a:
+
+$$
+\hat{\delta} = (\bar{y}_{2,T} - \bar{y}_{2,C}) - (\bar{y}_{1,T} - \bar{y}_{1,C})
+$$
+
+O, alternativamente:
+
+$$
+\hat{\delta} = (\bar{y}_{2,T} - \bar{y}_{1,T}) - (\bar{y}_{2,C} - \bar{y}_{1,C})
+$$
+
+**6)** Extraer medias condicionales del data frame conditional_means **(1 punto)**.
+
+-   Extraer primer elemento de la columna math, transformar con as.numeric () y asignar a "control_90".
+
+-   Extraer segundo elemento de la columna math, transformar con as.numeric () y asignar a "control_94".
+
+-   Extraer tercer elemento de la columna math, transformar con as.numeric () y asignar a "tratamiento_90".
+
+-   Extraer cuarto elemento de la columna math, transformar con as.numeric () y asignar a "tratamiento_94".
+
+```{r}
+
+control_90 <- as.numeric(conditional_means[1, "math"])
+
+control_94 <- as.numeric(conditional_means[2, "math"])
+
+tratamiento_90 <- as.numeric(conditional_means[3, "math"])
+
+tratamiento_94 <- as.numeric(conditional_means[4, "math"])
+```
+
+**7)** Calcular diferencias en diferencias a partir de la formula provista. Asignar a "diff_in_diff". Imprimir resultado **(1 punto)**.
+
+```{r}
+
+diff_in_diff <- (tratamiento_94 - control_94) - (tratamiento_90 - control_90)
+
+diff_in_diff_2 <- (tratamiento_94 - tratamiento_90) - (control_94 - control_90)
+
+print(diff_in_diff)
+
+print(diff_in_diff_2)
+```
+
+**8)** Interpretar estimador diff_in_diff **(1 punto)**.
+
+::: callout-note
+:::
+
+### Supuesto de tendencias paralelas (parallel trends)
+
+El estimador de diferencias en diferencias corresponde al ATE (Average Treatment Effect) bajo el supuesto de tendencias paralelas. Esto quiere decir que, en ausencia del tratamiento, la media del grupo tratado habría cambiado en la misma medida que la media del grupo no tratado (contrafactual).
+
+```{r}
+
+contrafactual <- as.numeric(conditional_means[3, "math"] + conditional_means[2, "math"] - conditional_means[1, "math"])
+
+filas <- data.frame(voucher= as.factor(c(1, 1)), year= c(90, 94) , math= c(as.numeric(conditional_means[3, "math"]), contrafactual))
+
+contrafactual_df <- rbind(conditional_means, filas)
+
+contrafactual_df$contrafactual <- as.factor(c(rep(0, times=4), rep(1, times=2)))
+
+conditional_means$contrafactual <- as.factor(rep(0, times=4))
+```
+
+```{r}
+
+ggplot(data=contrafactual_df, aes(x=year, y=math, color=voucher, shape=contrafactual))+
+  geom_point(size=3)+
+  geom_line(linewidth=1, linetype="dashed")+
+  geom_line(data=conditional_means, linewidth=1)+
+  ggtitle("Diff in diff contrafactual")+
+  xlab("Year")+
+  ylab("Math score")+
+  theme_minimal()
+```
+
+### Modelo DID simple
+
+Para obtener los errores de nuestro estimador DID y hacer contraste de hipótesis, tenemos que ajustar un modelo lineal. La formula general de un modelo DID con regresión lineal corresponde a:
+
+$$
+y = \beta_0 + \delta_0d2 + \beta_1dT + \delta_1 d2 \times dT + covariables
+$$
+
+Donde $d2$ corresponde a una variable dummy para el segundo período, y $dT$ corresponde a una variable dummy para el grupo tratado. En este modelo, el coeficiente de la interacción $\delta_1$ es el estimador DID.
+
+**1)** Ajustar un modelo lineal DID de math contra voucher. Asignar a "did_simple". Imprimir summary() **(1 punto)**.
+
+```{r}
+
+did_simple <- lm(math ~ voucher + year_94 + voucher*year_94, data = voucher_long)
+
+summary(did_simple)
+```
+
+**2)** Interpretar resultados del modelo DID **(1 punto)**.
+
+::: callout-note
+:::
+
+### Modelo DID controles
+
+Ahora incluiremos controles
+
+**1)** Ajustar un modelo lineal DID de math contra voucher. Incluir controles para "black" e "hispanic". Asignar a "did_controles" **(1 punto)**.
+
+```{r}
+
+did_controles <- lm(math ~ voucher + year_94 + voucher*year_94 + black + hispanic, data=voucher_long )
+```
+
+**2)** Imprimir stargazer() de did_simple y did_controles **(1 punto)**.
+
+```{r}
+stargazer(did_simple, did_controles, type="text")
+```
+
+**3)** Interpretar did_controles, haciendo referencia a los cambios observados respecto de did_simple. Aludir a variables omitidas **(1 punto)**.
+
+::: callout-note
+:::
+
+Construir gráfico de diferencias en diferencias a partir de los coeficientes (medias condicionales) estimadas en la regresión did_controles.
+
+**4)** Construir medias condicionales a partir de did_controles **(1 punto)**.
+
+-   Extraer el coeficiente relevantes para construir "control_90".
+
+-   Extraer y sumar los coeficientes relevantes para construir "control_94".
+
+-   Extraer y sumar los coeficientes relevantes para construir "tratamiento_90".
+
+-   Extraer y sumar los coeficientes relevantes para construir "tratamiento_94".
+
+-   Extraer y sumar los coeficientes relevantes para construir "contrafactual_90".
+
+-   Extraer y sumar los coeficientes relevantes para construir "contrafactual_94".
+
+```{r}
+# Control
+
+control_90 <- did_controles$coefficients["(Intercept)"]
+
+control_94 <- did_controles$coefficients["(Intercept)"] + did_controles$coefficients["year_94"]
+
+# Tratamiento
+
+tratamiento_90 <- did_controles$coefficients["(Intercept)"] + did_controles$coefficients["voucher"]
+
+tratamiento_94 <- did_controles$coefficients["(Intercept)"] + did_controles$coefficients["voucher"] + did_controles$coefficients["year_94"] + did_controles$coefficients["voucher:year_94"]
+
+# Contrafactual
+
+contrafactual_90 <- did_controles$coefficients["(Intercept)"] + did_controles$coefficients["voucher"]
+
+contrafactual_94 <- did_controles$coefficients["(Intercept)"] + did_controles$coefficients["voucher"] + did_controles$coefficients["year_94"]
+
+```
+
+**5)** Construir data frames para graficar.
+
+```{r}
+
+contrafactual_controles <- data.frame(contrafactual= as.factor(c(0, 0, 0, 0, 1, 1)), voucher= as.factor(c(0, 0, 1, 1, 1, 1)), year= rep(c(90, 94), times=3) , math= c(control_90, control_94, tratamiento_90, tratamiento_94, contrafactual_90, contrafactual_94))
+
+medias_controles <- data.frame(contrafactual= as.factor(rep(0, times=4)), voucher= as.factor(rep(c(0,1), each=2)), year= rep(c(90, 94), times=2) , math= c(control_90, control_94, tratamiento_90, tratamiento_94))
+```
+
+**6)** Graficar modelo did_controles con ggplot(). Incluir contrafactual en el gráfico **(1 punto)**.
+
+```{r}
+
+ggplot(data=contrafactual_controles, aes(x=year, y=math, color=voucher, shape=contrafactual))+
+  geom_point(size=3)+
+  geom_line(linewidth=1, linetype="dashed")+
+  geom_line(data=medias_controles, linewidth=1)+
+  ggtitle("Diff in diff")+
+  xlab("Year")+
+  ylab("Math score")+
+  theme_minimal()
+```
+
+**7)** Interpretar grafico de did_controles. ¿Cómo cambia respecto del gráfico de did_simple? **(1 punto)**.
+
+::: callout-note
+:::
+
+**TOTAL: 15 PUNTOS**

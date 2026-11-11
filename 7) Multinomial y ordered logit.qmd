@@ -1,0 +1,831 @@
+---
+title: "Sesión 7, Modelos de variable dependiente categórica, multinomial y ordered logit"
+format: docx
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Sesión 7, Modelos de variable dependiente categórica, multinomial y ordered logit
+
+## Instrucciones
+
+Responder al siguiente caso completando cada una de las preguntas con los códigos y las justificaciones solicitadas. Los scripts con sus respuestas deben ser cargados al repositorio del curso para la evaluación. El nombre del archivo debe ir en el formato "tarea_6_nombre_apellido.qmd". Los archivos deben ser cargados hasta el día viernes 06 de junio. Cada día de atraso en la entrega implicará un descuento de 1 décima en la nota de la tarea.
+
+## [Modelos de variable dependiente nominal: Multinomial logit]{.underline}
+
+### Prioridades nacionales
+
+Uno de los constructos más relevantes para explicar el comportamiento político de las personas se encuentra asociado a la identificación en el eje ideológico de izquierda-derecha. En la sesión de hoy, investigaremos como la identificación en el espectro ideológico influye sobre las prioridades políticas nacionales para las personas. Esto es, cómo varian las prioridades políticas para las personas que se identifican con la izquierda o la derecha.
+
+#### Cargar librerias al entorno de trabajo
+
+```{r echo=FALSE}
+
+if (!require(tidyverse)) {
+  install.packages("tidyverse")
+}
+
+if (!require(nnet)) {
+  install.packages("nnet")
+}
+
+if (!require(stargazer)) {
+  install.packages("stargazer")
+}
+
+if (!require(MASS)) {
+  install.packages("MASS")
+}
+
+library(MASS)
+library(tidyverse)
+library(nnet)
+library(stargazer)
+```
+
+#### Cargamos nuestros datos
+
+Utilizaremos la versión 90 de la encuesta CEP, que fue recolectada entre los meses de septiembre y noviembre de 2023.
+
+```{r}
+
+cep_bruta <- read.csv("base_90.csv")
+```
+
+#### Seleción de variables
+
+Trabajaremos con las variables:
+
+-   percepcion_1_a **(Respuesta)**: ¿Cual es el problema al que debería dedicar el mayor esfuerzo en solucionar el gobierno?
+
+    La encuesta CEP contempla 18 alternativas de problemáticas. Para hacer el análisis tratable, nos quedaremos con las 4 más relevantes: **Delincuencia, asaltos y robos** (24.27%), **salud** (14.85%), **pensiones** (13.13%) y **corrupción** (10.5%)
+
+-   iden_pol_2 **(Predictor)**: Identificación en el eje izquierda-derecha.
+
+-   Controles: edad, sexo, esc_nivel_1_c (escolaridad), zona_u_r (urbano/rural).
+
+```{r}
+
+cep <- cep_bruta %>%
+  dplyr::select(percepcion_1_a, iden_pol_2, esc_nivel_1_c, edad, sexo, zona_u_r)
+```
+
+Filtramos los niveles de la variable de respuesta que excluiremos del análisis y transformamos respuestas en conjuntos de variables dummies.
+
+-   **Pensiones == 1**
+
+-   **Corrupción == 2**
+
+-   **Delincuencia, asaltos y robos == 3**
+
+-   **Salud == 10**
+
+```{r}
+
+cep <- cep %>%
+  filter(percepcion_1_a %in% c(1, 2, 3, 10)) %>%
+  mutate(pensiones = ifelse(percepcion_1_a==1, 1, 0),
+         corrupcion = ifelse(percepcion_1_a==2, 1, 0),
+         delincuencia = ifelse(percepcion_1_a==3, 1, 0),
+         salud = ifelse(percepcion_1_a==10, 1, 0)
+         )
+
+cep$prioridad <- 0
+cep$prioridad[cep$percepcion_1_a==1] <- "pensiones"
+cep$prioridad[cep$percepcion_1_a==2] <- "corrupcion"
+cep$prioridad[cep$percepcion_1_a==3] <- "delincuencia"
+cep$prioridad[cep$percepcion_1_a==10] <- "salud"
+
+cep$prioridad <- as.factor(cep$prioridad)
+```
+
+Filtramos respuestas "no sabe", "no responde".
+
+```{r}
+
+cep <- cep %>%
+  filter_all(all_vars(. != -8 & . != -9))
+```
+
+Reescalamos y renombramos las variables por interpretabilidad
+
+```{r}
+
+cep <- cep %>%
+  mutate(izquierda = 10 - iden_pol_2,
+         edad_18 = edad - 18,
+         urbano = 2 - zona_u_r,
+         escolaridad = esc_nivel_1_c,
+         mujer = sexo - 1
+         ) %>%
+  dplyr::select(prioridad, pensiones, corrupcion, delincuencia, salud, izquierda, edad_18, urbano, escolaridad, mujer)
+```
+
+Ya estamos listos para trabajar
+
+```{r}
+
+cep %>%
+  dplyr::select(pensiones, corrupcion, delincuencia, salud) %>%
+  summary()
+```
+
+```{r}
+cep %>%
+  dplyr::select(izquierda, edad_18, urbano, escolaridad, mujer) %>%
+  summary()
+```
+
+### Probabilidad en modelo multinomial
+
+El modelo logit multinomial corresponde a una generalización del modelo logistico, donde se incorporan multiples respuestas. Para estimar este modelo, se define una respuesta que actúa como contraste contra todas las demás respuestas. Por lo tanto, se le asigna un valor de 0 a todos los parámetros (betas) de dicha respuesta de contraste. Los betas de las demás respuestas corresponden a los log-odds contra la respuesta de contraste.
+
+$$ 
+\textrm{P}(y=m | \mathbf{x})=\frac{exp(\beta_{0m} + \mathbf{x} \boldsymbol{\beta}_m)}{1+ \sum_{j=2}^{J} exp(\beta_{0j} + \mathbf{x} \boldsymbol{\beta}_j)}
+$$
+
+$$ 
+\textrm{P}(y=1 | \mathbf{x})=\frac{1}{1+ \sum_{j=2}^{J} exp(\beta_{0j} + \mathbf{x} \boldsymbol{\beta}_j)} 
+$$
+
+### Likelihood
+
+$$
+\mathcal{L}(\boldsymbol{\beta}|\mathbf{y}, \mathbf{X})= \prod_{m=1}^J \prod_{y_i=m} \frac{exp(\beta_{0m} + \mathbf{x_i} \boldsymbol{\beta}_m)}{1+ \sum_{j=2}^{J} exp(\beta_{0j} + \mathbf{x}_i \boldsymbol{\beta}_j)}
+$$
+
+$$
+\mathcal{L}(\boldsymbol{\beta}|\mathbf{y}, \mathbf{X})= \prod_{j=1}^J 1[y_i=j] \textrm{P}(y=j | \mathbf{x})
+$$
+
+### Estimando un modelo multinomial
+
+**1)** Ajustar un modelo multinomial de prioridad nacional contra izquierda con la función multinom() del paquete nnet.
+
+-   Utilizar la sintáxis cbind(delincuencia, pensiones, corrupcion, salud) para la variable de respuesta.
+
+-   Guardar modelo como "multinomial_simple".
+
+-   Guardar summary() como "multinomial_simple_summary".
+
+-   Imprimir tabla de regresión con la función stargazer().
+
+```{r}
+
+multinomial_simple <- multinom(cbind(delincuencia, pensiones, corrupcion, salud) ~ izquierda, data=cep)
+
+multinomial_simple_summary <- summary(multinomial_simple)
+
+stargazer(multinomial_simple, type="text")
+```
+
+**2)** Interpretar resultados de multinomial_simple. Recordar que coeficientes reflejan log-odds de cada respuesta contra la respuesta de contraste **(1 punto)**.
+
+::: callout-note
+:::
+
+### Contrastes
+
+Si queremos un contraste entre otras respuestas del modelo, por ejemplo, entre salud y corrupción, podemos tomar la diferencia entre los betas. Esta diferencia también sigue una distribución logística.
+
+$$
+\Lambda [\textbf{x} (\boldsymbol{\beta_{m}} - \boldsymbol{\beta_{r}})]
+$$
+
+$$
+\boldsymbol{\beta_{m}} - \boldsymbol{\beta_{r}}
+$$
+
+**1)** Obtener contraste de salud contra corrupción.
+
+-   Extraer coeficientes de salud de multinomial_simple_summary.
+
+-   Extraer coeficientes de corrupción de multinomial_simple_summary.
+
+-   Tomar resta entre coeficientes de salud y corrupción. Asignar a "betas_salud_corrupcion". Imprimir.
+
+```{r}
+
+betas_salud_corrupcion <- multinomial_simple_summary$coefficients["salud",] - multinomial_simple_summary$coefficients["corrupcion",]
+
+betas_salud_corrupcion
+
+```
+
+**2)** Interpretar contraste **(1 punto)**.
+
+::: callout-note
+:::
+
+De forma más sencilla y completa, podemos obtener este contraste junto con los errores y significancia estimando un nuevo modelo con la base deseada.
+
+**3)** Ajustar un nuevo modelo multinomial utilizando corrupción como base con la función multinom().
+
+-   Utilizar la sintáxis cbind(corrupcion, delincuencia, pensiones, salud) para la variable de respuesta. ¡La respuesta que asignamos en primer lugar es el contraste!
+
+-   Guardar modelo como "multinomial_contraste".
+
+-   Guardar summary() como "multinomial_contraste_summary".
+
+-   Imprimir tabla de regresión con la función stargazer().
+
+```{r}
+
+multinomial_contraste <- multinom(cbind(corrupcion, delincuencia, pensiones, salud) ~ izquierda, data=cep)
+
+multinomial_contraste_summary <- summary(multinomial_simple)
+
+stargazer(multinomial_contraste, type="text")
+
+```
+
+**4)** Comparar betas_salud_corrupcion con multinomial_contraste_summary\$coefficients\["salud", \].
+
+```{r}
+
+multinomial_contraste_summary$coefficients["salud", ]
+
+betas_salud_corrupcion 
+
+round(multinomial_contraste_summary$coefficients["salud", ], digits=3)==round(betas_salud_corrupcion,digits=3) 
+```
+
+### Probabilidad estimada
+
+Podemos obtener la probabilidad estimada de observar cada una de las respuestas de acuerdo con nuestro modelo siguiendo la formula:
+
+$$ 
+\textrm{P}(y=m | \mathbf{x})=\frac{exp(\beta_{0m} + \mathbf{x} \boldsymbol{\beta}_m)}{1+ \sum_{j=2}^{J} exp(\beta_{0j} + \mathbf{x} \boldsymbol{\beta}_j)} 
+$$
+
+Al igual que en el modelo logit simple, la probabilidad depende del nivel de todos los predictores. Obtengamos, para ejemplificar, la probabilidad estimada para una persona con **nivel mediano** en el eje izquierda-derecha de tener como prioridad nacional las políticas de pensiones.
+
+**1)** Calcular el numerador de la formula.
+
+Pasos a seguir
+
+-   Tomar el vector de coeficientes de multinomial_simple_summary y seleccionar los coeficientes asociados a pensiones con el subset \["pensiones",\]
+
+-   Multiplicar vector de coeficientes por el vector de valores de interés.
+
+-   Tomar sum() del vector resultante. ¡Estos son los log-odds de pensiones contra delincuencia para un nivel mediano de izquierda!
+
+-   Tomar exp() de los log-odds. ¡Tomar el exponencial nos deja con los odds! Asignar a "numerador".
+
+```{r}
+
+numerador <- exp(sum(multinomial_simple_summary$coefficients["pensiones",] * c(1, median(cep$izquierda))))
+
+numerador
+```
+
+**2)** Calcular el denominador de la formula.
+
+Pasos a seguir
+
+-   Repetir punto anterior para los coeficientes de cada una de las respuestas.
+
+-   Tomar suma de todos los elementos (pensiones, corrupción y salud).
+
+-   Sumar 1 al resultado. Asignar a "denominador".
+
+```{r}
+
+pensiones <- exp(sum(multinomial_simple_summary$coefficients["pensiones",] * c(1, median(cep$izquierda))))
+
+corrupcion <- exp(sum(multinomial_simple_summary$coefficients["corrupcion",] * c(1, median(cep$izquierda))))
+
+salud <- exp(sum(multinomial_simple_summary$coefficients["salud",] * c(1, median(cep$izquierda))))
+
+denominador <- 1 + pensiones + corrupcion + salud
+
+denominador
+```
+
+**3)** Tomar división entre numerador y denominador. Asignar a "prob_pensiones". Imprimir resultado.
+
+```{r}
+
+prob_pensiones <- numerador/denominador
+
+prob_pensiones
+```
+
+Afortunadamente, tenemos una forma más simple de llevar a cabo este proceso con la formula predict(), pidiendole a nuestro modelo que prediga las probabilidades asociadas a ciertos valores de interés.
+
+**4)** Obtener predicciones del modelo multinomial_simple para una persona con valor mediano en el eje izquierda-derecha. Utilizar la función predict() y el argumento type="probs". Asignar resultado a "probs". Imprimir y comparar con el cálculo anterior.
+
+```{r}
+
+probs <- predict(multinomial_simple, newdata=data.frame(izquierda=median(cep$izquierda)), type="probs")
+
+probs
+```
+
+**5)** Interpretar probabilidades estimadas de prioridad nacional para un nivel mediano de identificación en el eje izquierda-derecha **(1 punto).**
+
+::: callout-note
+:::
+
+### Efectos parciales para variables continuas
+
+Los efectos parciales de los modelos multinomiales son complejos. Al punto que [**no podemos confiar en los signos de los coeficientes estimados para interpretar la dirección del efecto**]{.underline}. Los efectos parciales para variables continuas se obtienen a partir de la diferenciación de las probabilidades de observar cada respuesta con respecto a la variable de interés.
+
+$$
+\frac{\partial \textrm{P}(y=m|\textbf{x})}{\partial x_k} = \textrm{P}(y=m|\textbf{x})[ \beta_{km} - \sum_{j=1}^{J}\beta_{kj} \textrm{P}(y=j|\textbf{x})]
+$$
+
+**1)** Comencemos obteniendo las probabilidades asociadas a cada respuesta $\textrm{P}(y=j | \textbf{x})$ para un valor mediano de identificación en el eje izquierda-derecha. Asignar a "probs". Imprimir.
+
+```{r}
+
+probs <- predict(multinomial_simple, newdata=data.frame(izquierda=median(cep$izquierda)), type="probs")
+
+probs
+```
+
+**2)** En base a estos valores, calcular la sumatoria de la ecuación anterior.
+
+$$
+\sum_{j=1}^{J}\beta_{kj} \textrm{P}(y=j|\textbf{x})
+$$
+
+Pasos a seguir:
+
+-   Crear un vector cuyo primer valor sea 0 $(\beta_{delincuencia}=0)$ y el resto de los valores sean los coeficientes de izquierda de multinomial_simple_summary. Asignar a "betas_kj"
+
+-   Multiplicar el vector betas_kj por el vector probs.
+
+-   Tomar sum() del vector resultante. Asignar a "sumatoria" e imprimir.
+
+```{r}
+
+betas_kj <- c(0, multinomial_simple_summary$coefficients[,"izquierda"])
+
+sumatoria <- sum(betas_kj*probs)
+
+```
+
+**3)** Obtener efectos parciales de izquierda sobre cada una de las respuestas, siguiendo la formula previa.
+
+$$
+\frac{\partial \textrm{P}(y=m|\textbf{x})}{\partial x_k} = \textrm{P}(y=m|\textbf{x})[ \beta_{km} - \sum_{j=1}^{J}\beta_{kj} \textrm{P}(y=j|\textbf{x})]
+$$
+
+Pasos a seguir:
+
+-   Tomar resta entre betas_kj y sumatoria
+
+-   Multiplicar resultado por probs. Asignar a "partial_effects" e imprimir.
+
+```{r}
+
+partial_effects <- probs * (betas_kj - sumatoria)
+
+partial_effects
+```
+
+### Efectos parciales para variables discretas
+
+Afortunadamente, los efectos parciales para variables discretas son más sencillos de calcular. Al igual que con los modelos de variable dependiente binaria, simplemente tomamos la diferencia entre las probabilidades estimadas al aumentar la variable de interés en una unidad.
+
+**1)** Calcular efecto parcial al aumentar una unidad por encima de la mediana en identificación en el eje izquierda-derecha.
+
+Pasos a seguir:
+
+-   Tomar probabilidad estimada con la función predict() para un valor mediano de izquierda. Asignar a "probs".
+
+-   Tomar probabilidad estimada para una unidad por encima de la mediana en izquierda. Asignar a "probs_2".
+
+-   Tomar resta entre probs_2 y probs. Asignar a "partial_effects". Imprimir.
+
+```{r}
+
+```
+
+### Multinomial multiple
+
+Agreguemos predictores a nuestro modelo.
+
+**1)** Ajustar modelo multinomial incorporando controles para:
+
+-   edad_18
+
+-   urbano
+
+-   escolaridad
+
+-   mujer
+
+Guardar summary() como "multinomial_multiple_summary" e imprimir tabla con stargazer().
+
+```{r}
+
+```
+
+**2)** Interpretar resultados de multinomial_multiple. Reflexionar con respecto a los mecanismos (teóricos) que podrían explicar los resultados significativos en este modelo. Recordar que los coeficientes por si mismos no reflejan con certeza la dirección del efecto **(1 punto)**.
+
+::: callout-note
+:::
+
+#### APE
+
+**3)** Calcular average partial effect **(APE)** en la muestra en base multinomial_multiple. Asignar a "APE_izquierda" e imprimir. Asumir que izquierda es una variable discreta.
+
+Pasos a seguir:
+
+-   Crear nuevo data frame llamado "cep_cero_top" filtrando las observaciones con el valor máximo de izquierda (9) y un data frame llamado "cep_cero_bottom", filtrando las observaciones con el valor mínimo de izquierda (0). **¡Ojo, esta no es una convencion teórica!** Es una propuesta para solucionar el problema de excluir observaciones del cálculo y de predecir fuera del dominio.
+
+-   Crear nuevo data frame llamado "cep_uno_top" sumando 1 a la columna izquierda de "cep_cero_top". Crear nuevo data frame llamado "cep_uno_bottom" restando 1 a la columna izquierda de "cep_cero_bottom".
+
+-   Predecir probabilidades de cep_cero_top y cep_cero_bottom en base a multinomial_multiple con la formula predict(). Asignar a probs_cero_top y probs_cero_bottom.
+
+-   Predecir probabilidades de cep_uno_top y cep_uno_bottom en base a multinomial_multiple con la formula predict(). Asignar a probs_uno_top y probs_uno_bottom.
+
+-   Tomar resta de (probs_uno_top - probs_cero_top) y (probs_cero_bottom - probs_uno_bottom). Restamos en orden inverso para preservar la dirección del efecto.
+
+-   Tomar colMeans() de cada una de las restas. Asignar a APE_izquierda_top y APE_izquierda_bottom. Imprimir.
+
+```{r}
+
+
+```
+
+**4)** Interpretar resultados de APE_izquierda **(1 punto)**.
+
+::: callout-note
+:::
+
+**5)** Los coeficientes de las variables urbano y mujer parecen interesantes. Calcular **APE** para urbano y mujer. Asignar a APE_urbano y APE_mujer. Imprimir resultados.
+
+Pasos a seguir:
+
+-   Crear nuevo data frame llamado "cep_cero" donde todos los valores de urbano sean 0.
+
+-   Crear nuevo data frame llamado "cep_uno" donde todos los valores de urbano sean 1.
+
+-   Predecir probabilidades de cep_cero en base multinomial_multiple con la formula predict(). Asignar a "probs_cero".
+
+-   Predecir probabilidades de cep_uno en base multinomial_multiple con la formula predict(). Asignar a "probs_uno".
+
+-   Tomar resta de probs_uno y probs_cero.
+
+-   Tomar colMeans() de la resta anterior. Asignar a APE_urbano. Imprimir.
+
+-   Repetir para mujer.
+
+```{r}
+
+```
+
+**6)** Interpretar resultados de APE_urbano y APE_mujer **(2 puntos)**.
+
+::: callout-note
+:::
+
+#### PEA
+
+**7)** Graficar partial effect at the average **(PEA)** en multinomial_multiple para los diferentes niveles de izquierda. Asumir que izquierda es una variable discreta.
+
+```{r}
+
+partial_effects <- matrix(nrow=9, ncol=4)
+
+for (i in min(cep$izquierda):max(cep$izquierda)) {
+  
+  probs <- predict(multinomial_multiple, newdata=data.frame(izquierda=i, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
+
+  probs_2 <- predict(multinomial_multiple, newdata=data.frame(izquierda=i+1, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
+
+  partial_effects[i,] <-  probs_2 - probs
+  
+}
+
+partial_effects <- data.frame(efecto = c(partial_effects[,1], partial_effects[,2], partial_effects[,3], partial_effects[,4]), izquierda=rep(0:8, times=4), respuesta=rep(c("delincuencia", "pensiones", "corrupcion", "salud"), each=9))
+
+ggplot(data = partial_effects, aes(x=izquierda, y=efecto, color=respuesta)) +
+  geom_line(linewidth=1.5)+
+  ggtitle("PEA izquierda") +
+  xlab("Izquierda") +
+  ylab("Partial effect") +
+  theme_minimal()
+```
+
+#### Efecto parcial contra probabilidad estimada
+
+**8)** Graficar cambio en probabilidades estimadas de ordered_multiple para los diferentes niveles de izquierda. Asumir que izquierda es una variable discreta.
+
+```{r}
+probabilities <- matrix(nrow=9, ncol=4)
+
+for (i in min(cep$izquierda):max(cep$izquierda)) {
+  
+  probs <- predict(multinomial_multiple, newdata=data.frame(izquierda=i, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
+
+  probabilities[i,] <-  probs
+  
+}
+
+probabilities <- data.frame(probabilities = c(probabilities[,1], probabilities[,2], probabilities[,3], probabilities[,4]), izquierda=rep(0:8, times=4), respuesta=rep(c("delincuencia", "pensiones", "corrupcion", "salud"), each=9))
+
+ggplot(data = probabilities, aes(x=izquierda, y=probabilities, color=respuesta)) +
+  geom_line(linewidth=1.5)+
+  ggtitle("Probabilidades prioridad nacional izquierda") +
+  xlab("Izquierda") +
+  ylab("Probabilidades prioridad") +
+  theme_minimal()
+```
+
+## [Modelos de variable dependiente ordinal: Ordered logit]{.underline}
+
+El modelo ordinal también es similar al modelo logístico binario, pero donde se estima un vector de parámetros adicionales $(\boldsymbol{\alpha}\space o \space \boldsymbol{\tau})$, los cuales corresponden a los puntajes de corte (en log-odds) de un nivel al siguiente. Para obtener la probabilidad de que la variable de respuesta corresponda a cada nivel, calculamos la probabilidad de que los log-odds estimados estén por sobre o por debajo del puntaje de corte para ser clasificados en dicho nivel.
+
+$$
+\textrm{P}(y=0|\textbf{x})=\textrm{P}(\textbf{x}\boldsymbol{\beta}+e \leq \alpha_1|\textbf{x}) \\
+\textrm{P}(y=1|\textbf{x})=\textrm{P}(\alpha_1 < \textbf{x}\boldsymbol{\beta}+e \leq \alpha_2 | \textbf{x}) \\
+... \\
+... \\
+... \\
+\textrm{P}(y=J-1|\textbf{x})=\textrm{P}(\alpha_{J-1} \leq \textbf{x}\boldsymbol{\beta}+e \leq \alpha_J | \textbf{x}) \\
+\textrm{P}(y=J|\textbf{x})=\textrm{P}(\textbf{x}\boldsymbol{\beta}+e > \alpha_J | \textbf{x})
+$$ A diferencia del modelo multinomial, tenemos un solo vector de coeficientes betas que explican la relación de log-odds entre los predictores y las respuestas, y el vector $(\boldsymbol{\beta})$ no incluye un intercepto. No obstante, la estimación de los coeficientes $\boldsymbol{\alpha}$ es matemáticamente equivalente a estimar un modelo con múltiples interceptos (un intercepto por cada transición entre niveles de la respuesta).
+
+$$
+\textrm{P}(y=0|\textbf{x}) = \Lambda(\alpha_1-\textbf{x}\boldsymbol{\beta}) \\
+\textrm{P}(y=1|\textbf{x}) = \Lambda(\alpha_2-\textbf{x}\boldsymbol{\beta}) -\Lambda(\alpha_1-\textbf{x}\boldsymbol{\beta}) \\
+... \\
+... \\
+... \\
+\textrm{P}(y=J-1|\textbf{x}) = \Lambda(\alpha_J-\textbf{x}\boldsymbol{\beta}) -\Lambda(\alpha_{J-1}-\textbf{x}\boldsymbol{\beta}) \\
+\textrm{P}(y=J|\textbf{x}) = 1 - \Lambda(\alpha_J-\textbf{x}\boldsymbol{\beta})
+$$
+
+Obtenemos, al igual que en el modelo multinomial, una probabilidad estimada de que los niveles de los predictores pertenezcan a cada uno de los niveles de la variable de respuesta.
+
+### Likelihood
+
+$$
+\mathcal{L}(\boldsymbol{\beta},\boldsymbol{\alpha}|\mathbf{y}, \mathbf{X})= \prod_{j=1}^J \prod_{y_i=j} [\Lambda(\alpha_j-\textbf{x}_i\boldsymbol{\beta}) -\Lambda(\alpha_{j-1}-\textbf{x}_i\boldsymbol{\beta})]
+$$
+
+### Inmigración
+
+Vimos que una de las prioridades nacionales se encuentra asociada a la preocupación de los ciudadanos por la delincuencia. Veamos, ahora, si la identificación en el espectro ideológico influye sobre la percepción de delincuencia asociada la inmigración.
+
+#### Seleción de variables
+
+Trabajaremos con las variables:
+
+-   iden_nacional_8_a **(Respuesta)**: "Los inmigrantes elevan los índices de criminalidad". Escala likert del 1 al 5. Muy de acuerdo a muy en desacuerdo.
+
+-   iden_pol_2 **(Predictor)**: Identificación en el eje izquierda-derecha.
+
+-   Controles: edad, sexo, esc_nivel_1_c (escolaridad), zona_u_r (urbano/rural).
+
+```{r}
+
+cep <- cep_bruta %>%   
+  dplyr::select(iden_nacional_8_a, iden_pol_2, esc_nivel_1_c, edad, sexo, zona_u_r)
+```
+
+Filtramos respuestas "no sabe", "no responde".
+
+```{r}
+
+cep <- cep %>%   
+  filter_all(all_vars(. != -8 & . != -9))
+```
+
+Reescalamos y renombramos las variables por interpretabilidad
+
+```{r}
+
+cep <- cep %>%   
+  mutate(inmigracion = as.factor(5 - iden_nacional_8_a),
+         izquierda = 10 - iden_pol_2,          
+         edad_18 = edad - 18,          
+         urbano = 2 - zona_u_r,          
+         escolaridad = esc_nivel_1_c,          
+         mujer = sexo - 1          
+         ) %>%   
+  dplyr::select(inmigracion, izquierda, edad_18, urbano, escolaridad, mujer)
+```
+
+### Ordered simple
+
+**1)** Ajustar un modelo logit ordinal de inmigración contra izquierda con la función polr() del paquete MASS. Asignar a "ordered_simple" e imprimir summary().
+
+```{r}
+
+ordered_simple <- polr(inmigracion ~ izquierda, data=cep)
+
+summary(ordered_simple)
+
+
+
+```
+
+### Probabilidad estimada
+
+Podemos obtener la probabilidad de que los predictores en los niveles de interés pertenezcan a cada uno de los niveles de la respuesta utilizando la formula del modelo ordinal.
+
+$$
+\textrm{P}(y=0|\textbf{x}) = \Lambda(\alpha_1-\textbf{x}\boldsymbol{\beta}) \\
+\textrm{P}(y=1|\textbf{x}) = \Lambda(\alpha_2-\textbf{x}\boldsymbol{\beta}) -\Lambda(\alpha_1-\textbf{x}\boldsymbol{\beta}) \\
+... \\
+... \\
+... \\
+\textrm{P}(y=J-1|\textbf{x}) = \Lambda(\alpha_J-\textbf{x}\boldsymbol{\beta}) -\Lambda(\alpha_{J-1}-\textbf{x}\boldsymbol{\beta}) \\
+\textrm{P}(y=J|\textbf{x}) = 1 - \Lambda(\alpha_J-\textbf{x}\boldsymbol{\beta})
+$$
+
+```{r}
+
+prob_0 <- plogis(ordered_simple$zeta["0|1"] - ordered_simple$coefficients*c(median(cep$izquierda)))
+
+prob_1 <- plogis(ordered_simple$zeta["1|2"] - ordered_simple$coefficients*c(median(cep$izquierda))) - prob_0
+
+prob_2 <- plogis(ordered_simple$zeta["2|3"] - ordered_simple$coefficients*c(median(cep$izquierda))) - prob_1 - prob_0
+
+prob_3 <- plogis(ordered_simple$zeta["3|4"] - ordered_simple$coefficients*c(median(cep$izquierda))) - prob_2 - prob_1 - prob_0
+
+prob_4 <- 1 - plogis(ordered_simple$zeta["3|4"] - ordered_simple$coefficients*c(median(cep$izquierda)))
+
+c(prob_0, prob_1, prob_2, prob_3, prob_4)
+```
+
+No obstante, podemos obtener una estimación más rápida con la función predict().
+
+**1)** Obtener las probabilidades estimadas del modelo ordered_simple para un nivel mediano de la variable izquierda utilizando la función predict(). Asignar a "probs" e imprimir.
+
+```{r}
+
+```
+
+**2)** Interpretar probabilidades estimadas para un nivel mediano en la variable izquierda **(1 punto)**.
+
+::: callout-note
+:::
+
+### Efectos parciales para variables continuas
+
+Al igual que en los modelos multinomiales, el efecto parcial de los predictores sobre la respuesta no está determinado de forma inambigua por el signo del coeficiente correspondiente. $$
+\frac{\partial \textrm{P}(y=0|\textbf{x})}{\partial x_k} = -\beta_k \lambda(\alpha_{1}-\textbf{x}\boldsymbol{\beta}) \\
+\frac{\partial \textrm{P}(y=j|\textbf{x})}{\partial x_k} = \beta_k[\lambda(\alpha_{j-1}-\textbf{x}\boldsymbol{\beta}) - \lambda(\alpha_{j}-\textbf{x}\boldsymbol{\beta})], \space 0<j <J \\
+\frac{\partial \textrm{P}(y=J|\textbf{x})}{\partial x_k} = \beta_k \lambda(\alpha_{J}-\textbf{x}\boldsymbol{\beta}) \\
+$$
+
+**1)** Estimar los efectos parciales para el nivel mínimo de la variable izquierda. Asumir que izquierda es una variable continua.
+
+```{r}
+
+xbeta <- ordered_simple$coefficients * c(min(cep$izquierda))
+
+partial_0 <- -ordered_simple$coefficients["izquierda"] * dlogis(ordered_simple$zeta["0|1"] - xbeta)
+
+partial_1 <- ordered_simple$coefficients["izquierda"] * (dlogis(ordered_simple$zeta["0|1"] - xbeta) - dlogis(ordered_simple$zeta["1|2"] - xbeta))
+
+partial_2 <- ordered_simple$coefficients["izquierda"] * (dlogis(ordered_simple$zeta["1|2"] - xbeta) - dlogis(ordered_simple$zeta["2|3"] - xbeta))
+
+partial_3 <- ordered_simple$coefficients["izquierda"] * (dlogis(ordered_simple$zeta["2|3"] - xbeta) - dlogis(ordered_simple$zeta["3|4"] - xbeta))
+
+partial_4 <- ordered_simple$coefficients["izquierda"] * dlogis(ordered_simple$zeta["3|4"] - xbeta)
+
+c(partial_0, partial_1, partial_2, partial_3, partial_4)
+```
+
+### Efectos parciales para variables discretas
+
+Al igual que en los modelos multinomiales, estimar los efectos parciales para variables discretas es más sencillo, simplemente tomamos la diferencia entre probabilidades estimadas.
+
+**1)** Calcular efecto parcial sobre inmigración cuando izquierda aumenta de 0 a 1.
+
+Pasos a seguir:
+
+-   Calcular probabilidades estimadas cuando izquierda está en el mínimo. Asignar a "probs".
+
+-   Calcular probabilidades estimadas cuando izquierda está en el mínimo + 1. Asignar a "probs_2".
+
+-   Tomar diferencia entre probs_2 y probs. Asignar a "partial_effects" e imprimir.
+
+```{r}
+
+```
+
+### Ordered múltiple
+
+Agreguemos predictores a nuestro modelo.
+
+**1)** Ajustar modelo ordinal incorporando controles para:
+
+-   edad_18
+
+-   urbano
+
+-   escolaridad
+
+-   mujer
+
+Guardar como "ordered_multiple", imprimir summary() y stargazer().
+
+```{r}
+
+```
+
+#### APE
+
+**2)** Calcular average partial effect **(APE)** en la muestra en base a ordered_multiple. Asignar a "APE_izquierda" e imprimir. Asumir que izquierda es una variable discreta.
+
+Pasos a seguir:
+
+-   Crear nuevo data frame llamado "cep_cero_top" filtrando las observaciones con el valor máximo de izquierda (9) y un data frame llamado "cep_cero_bottom", filtrando las observaciones con el valor mínimo de izquierda (0). **¡Ojo, esta no es una convencion teórica!** Es una propuesta para solucionar el problema de excluir observaciones del cálculo y de predecir fuera del dominio.
+
+-   Crear nuevo data frame llamado "cep_uno_top" sumando 1 a la columna izquierda de "cep_cero_top". Crear nuevo data frame llamado "cep_uno_bottom" restando 1 a la columna izquierda de "cep_cero_bottom".
+
+-   Predecir probabilidades de cep_cero_top y cep_cero_bottom en base a multinomial_multiple con la formula predict(). Asignar a probs_cero_top y probs_cero_bottom.
+
+-   Predecir probabilidades de cep_uno_top y cep_uno_bottom en base a multinomial_multiple con la formula predict(). Asignar a probs_uno_top y probs_uno_bottom.
+
+-   Tomar resta de (probs_uno_top - probs_cero_top) y (probs_cero_bottom - probs_uno_bottom). Restamos en orden inverso para preservar la dirección del efecto.
+
+-   Tomar colMeans() de cada una de las restas. Asignar a APE_izquierda_top y APE_izquierda_bottom. Imprimir.
+
+```{r}
+
+```
+
+**3)** El coeficiente de la variable urbano parece interesante. Calcular **APE** para urbano. Asignar a APE_urbano. Imprimir resultado.
+
+Pasos a seguir:
+
+-   Crear nuevo data frame llamado "cep_cero" donde todos los valores de urbano sean 0.
+
+-   Crear nuevo data frame llamado "cep_uno" donde todos los valores de urbano sean 1.
+
+-   Predecir probabilidades de cep_cero en base multinomial_multiple con la formula predict(). Asignar a "probs_cero".
+
+-   Predecir probabilidades de cep_uno en base multinomial_multiple con la formula predict(). Asignar a "probs_uno".
+
+-   Tomar resta de probs_uno y probs_cero.
+
+-   Tomar colMeans() de la resta anterior. Asignar a APE_urbano. Imprimir.
+
+```{r}
+
+```
+
+#### PEA
+
+**4)** Graficar partial effect at the average **(PEA)** en ordered_multiple para los diferentes niveles de izquierda. Asumir que izquierda es una variable discreta.
+
+```{r}
+
+partial_effects <- matrix(nrow=9, ncol=5)
+
+for (i in min(cep$izquierda):max(cep$izquierda)) {
+  
+  probs <- predict(ordered_multiple, newdata=data.frame(izquierda=i, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
+
+  probs_2 <- predict(ordered_multiple, newdata=data.frame(izquierda=i+1, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
+
+  partial_effects[i,] <-  probs_2 - probs
+  
+}
+
+partial_effects <- data.frame(efecto = c(partial_effects[,1], partial_effects[,2], partial_effects[,3], partial_effects[,4], partial_effects[,5]), izquierda=rep(0:8, times=5), respuesta=rep(c("0 - Muy en desacuerdo", "1 - En desacuerdo", "2 - Ni de acuerdo ni en desacuerdo", "3 - De acuerdo", "4 - Muy de acuerdo"), each=9))
+
+ggplot(data = partial_effects, aes(x=izquierda, y=efecto, color=respuesta)) +
+  geom_line(linewidth=1.5)+
+  ggtitle("PEA izquierda") +
+  xlab("Izquierda") +
+  ylab("Partial effect") +
+  theme_minimal()
+```
+
+#### Efecto parcial contra probabilidad estimada
+
+**4)** Graficar cambio en probabilidades estimadas de ordered_multiple para los diferentes niveles de izquierda. Asumir que izquierda es una variable discreta.
+
+```{r}
+
+probabilities <- matrix(nrow=9, ncol=5)
+
+for (i in min(cep$izquierda):max(cep$izquierda)) {
+  
+  probs <- predict(ordered_multiple, newdata=data.frame(izquierda=i, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
+
+  probabilities[i,] <-  probs
+  
+}
+
+probabilities <- data.frame(probabilities = c(probabilities[,1], probabilities[,2], probabilities[,3], probabilities[,4], probabilities[,5]), izquierda=rep(0:8, times=5), respuesta=rep(c("0 - Muy en desacuerdo", "1 - En desacuerdo", "2 - Ni de acuerdo ni en desacuerdo", "3 - De acuerdo", "4 - Muy de acuerdo"), each=9))
+
+ggplot(data = probabilities, aes(x=izquierda, y=probabilities, color=respuesta)) +
+  geom_line(linewidth=1.5)+
+  ggtitle("Probabilidades inmigración izquierda") +
+  xlab("Izquierda") +
+  ylab("Probabilidades inmigración") +
+  theme_minimal()
+```
+
+**TOTAL: 8 PUNTOS**

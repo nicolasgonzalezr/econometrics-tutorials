@@ -1,0 +1,85 @@
+---
+title: "R cuadrado ajustado"
+format: docx
+editor_options: 
+  chunk_output_type: inline
+---
+
+#### Cargar librerias al entorno de trabajo
+
+```{r echo=FALSE}
+
+if (!require(tidyverse)) {
+  install.packages("tidyverse")
+}
+
+if (!require(stargazer)) {
+  install.packages("stargazer")
+}
+
+if (!require(wooldridge)) {
+  install.packages("wooldridge")
+}
+
+library(tidyverse)
+library(stargazer)
+library(wooldridge)
+```
+
+## R cuadrado ajustado
+
+```{r}
+
+data('wage1')
+```
+
+```{r}
+
+modelo_bueno <- lm(lwage ~ educ + exper + expersq + female + tenure, data=wage1)
+
+summary(modelo_bueno)
+```
+
+Recordemos que la formula para nuestro coeficiente de determinación corresponde a:
+
+$$
+R^2 = 1 - \frac{\textrm{SSR}/n}{\textrm{SST}/n}
+$$
+
+Pero esta estimación es sesgada, para obtener una estimación insesgada tenemos que calcular el R cuadrado ajustado:
+
+$$
+\bar{R^2} = 1 - \frac{\textrm{SSR}/(n - k - 1)}{\textrm{SST}/(n-1)}
+$$
+
+Veamos que tan grande puede ser el sesgo del R cuadrado regular. Vamos a crear variables aleatorias que sabemos no guardan relación alguna con la variable de respuesta.
+
+```{r}
+
+wage_duplicate <- wage1 %>%
+  select(lwage, educ, exper, expersq, female, tenure)
+
+for (i in 1:30) {
+  
+  wage_duplicate[[paste0("v_", i)]] <- rnorm(nrow(wage1), 0, 1)
+  
+}
+```
+
+Vamos a ajustar nuestro modelo bueno contra una muestra reducida de los datos, tal que tendremos solo un dato más que predictores $(n = k + 1)$
+
+```{r}
+
+modelo_small <- lm(lwage ~ educ + exper + expersq + female + tenure, data=wage1[50:86,])
+
+summary(modelo_small)
+```
+
+Ahora vamos a ajustar un modelo agregando todas las variables irrelevantes, y veremos que pasa con los coeficientes de determinación.
+
+```{r}
+
+modelo_malo <- lm(lwage ~ ., data=wage_duplicate[50:86,])
+
+summary(modelo_malo)
+```

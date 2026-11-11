@@ -1,0 +1,87 @@
+---
+title: "Sesión 10, Repaso"
+format: docx
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Sesión 10, Repaso
+
+## Instrucciones
+
+Responder al siguiente caso completando cada una de las preguntas con los códigos y las justificaciones solicitadas. Los scripts con sus respuestas deben ser exportados a pdf y cargados al repositorio del curso para la evaluación. El nombre del archivo debe ir en el formato "tarea_10_nombre_apellido.pdf". Los archivos deben ser cargados hasta el día lunes 30 de junio. Cada día de atraso en la entrega implicará un descuento de 1 décima en la nota de la tarea.
+
+#### Cargar librerias al entorno de trabajo
+
+```{r}
+
+
+```
+
+#### Cargar datos
+
+```{r}
+
+```
+
+#### Limpiar y transformar variables (1 punto)
+
+```{r}
+
+```
+
+#### Modelo simple
+
+**1)** Ajustar modelo simple contra la variable de interés **(1 punto)**.
+
+```{r}
+
+```
+
+#### Modelo multiple
+
+**1)** Ajustar el modelo múltiple contra variables omitidas y controles **(1 punto)**.
+
+```{r}
+
+```
+
+**2)** Reflexionar sobre los controles incluidos. ¿Generarían sesgo en caso de estar omitidos? ¿En qué dirección y por qué? **(1 punto)**.
+
+::: callout-note
+:::
+
+**3)** Reflexionar respecto de qué otras variables podrían estar omitidas, pero no están en los datos. ¿En qué dirección podrían estar sesgando los coeficientes y por qué? **(1 punto)**.
+
+::: callout-note
+:::
+
+#### Efectos marginales o parciales
+
+**1)** Si su modelo es OLS, calcular e interpretar efecto marginal de la variable de interés sobre la respuesta. Si el efecto no es lineal, considerar casos de interés teórico. Si su modelo es logístico, calcular APE de la variable de interés sobre la respuesta. Incluir intervalo de confianza **(2 puntos)**.
+
+-   Para obtener intervalo de confianza de un APE, utilizar bootstrap.
+
+```{r}
+
+```
+
+**2)** Interpretar efecto marginal o parcial de la variable de interés sobre la respuesta **(1 punto)**.
+
+::: callout-note
+:::
+
+#### Graficar resultados del modelo
+
+**1)** Si su modelo es OLS, graficar efecto marginal de la variable de interés sobre la respuesta. Si su modelo es logístico, graficar PEA de la variable de interés sobre la respuesta. Incluir barras de error (intervalo de confianza) si su modelo es OLS **(2 puntos)**.
+
+-   Si su variable explicativa es continua o discreta, pueden agregar su intervalo de confianza con la función geom_ribbon(aes(ymin, ymax))
+
+-   Si su variable explicativa es dummy o categórica, pueden agregar su su intervalo de confianza a un gráfico de barras con geom_errorbar(aes(ymin, ymax))
+
+```{r}
+
+
+```
+
+**TOTAL: 10 PUNTOS**

@@ -1,0 +1,671 @@
+---
+title: "Sesion 3, Regresion multiple"
+format: docx
+---
+
+# Sesión 3, Regresión múltiple
+
+## Instrucciones
+
+Responder al siguiente caso completando cada una de las preguntas con los códigos y las justificaciones solicitadas. Los scripts con sus respuestas deben ser cargados al repositorio del curso para la evaluación. El nombre del archivo debe ir en el formato "tarea_3_nombre_apellido.qmd". Los archivos deben ser cargados hasta el día lunes 5 de mayo. Cada día de atraso en la entrega implicará un descuento de 1 décima en la nota de la tarea.
+
+## The Hungry Judge
+
+Digamos que queremos estudiar como el hambre afecta las decisiones de libertad condicional concedida por los jueces de Chile. Nuestra hipótesis es que los jueces toman decisiones más severas cuando tienen hambre, y queremos probar esto empíricamente analizando cómo la cantidad de calorias que consumen en el desayuno afecta en la cantidad de libertades condicionales que conceden durante un día.
+
+### Cargar librerias al entorno de trabajo
+
+Cargar librería tidyverse para poder graficar con ggplot2 y modificar data frames con dplyr. También utilizaremos la librería truncnorm para poder tomar muestras de distribuciones normales truncadas y las librerias lmtest y sandwich para calcular regresiones con errores robustos.
+
+```{r}
+
+if (!require(tidyverse)) {
+  install.packages("tidyverse")
+}
+
+if (!require(truncnorm)) {
+  install.packages("truncnorm")
+}
+
+if (!require(lmtest)) {
+  install.packages("lmtest")
+}
+
+if (!require(sandwich)) {
+  install.packages("sandwich")
+}
+
+if (!require(stargazer)) {
+  install.packages("stargazer")
+}
+
+
+library(tidyverse)
+library(truncnorm)
+library(lmtest)
+library(sandwich)
+library(stargazer)
+```
+
+## Proceso generado de datos
+
+### Ceteris paribus
+
+Profundicemos en nuestro modelo de los jueces hambrientos.
+
+**1)** ¿Creen que el comportamiento de los jueces puede explicarse exclusivamente por las calorías que consumieron al desayuno? ¿Por qué podría ser relevante implementar un modelo de regresión múltiple en este caso? Considere asignación aleatoria y condición "ceteris paribus" en estudios observacionales. Justifique brevemente **(2 puntos)**.
+
+$$
+calorias = \delta_0 + \delta_1 mujer + \delta_2 azucar + v \\[15pt]
+libertades = \beta_0 + \beta_1 calorias + \beta_2 mujer + \beta_3 azucar + u
+$$
+
+**2)** Comencemos definiendo los parámetros de base en nuestro modelo de jueces hambrientos.
+
+**a)** Definir el promedio de libertades condicionales concedidas en un día cuando la cantidad de calorías consumidas en el desayuno corresponde a cero. En esta ocasión, diremos que los jueces que llegan en ayunas al juzgado otorgarán libertad condicional a 8 personas. Llamar a este parámetro beta_cero **(1punto).**
+
+```{r}
+
+beta_cero <- 8
+```
+
+**b)** Definir el beta asociado a las calorías en nuestro modelo anterior. Habiamos dicho que cada caloría adicional incrementa en 0.005 el número de libertades concedidas por un juez en promedio. Llamar a este parámetro "beta_calorias" **(1 punto)**.
+
+```{r}
+
+beta_calorias <- 0.005
+```
+
+### Variables omitidas
+
+Incorporemos variables que podrían estar correlacionadas con nuestra variable explicada (y) y nuestra variable explicativa (x) y, por lo tanto, transgredir el supuesto E(u\|x) = 0. Si nuestro modelo esta mal especificado, nuestros betas estarán sesgados.
+
+#### Sexo
+
+Sabemos que el sexo debe estar relacionado con la cantidad de calorías que consumen los jueces al desayuno, ya que las mujeres tienen (en promedio) un requerimiento energético diario menor al de los hombres.
+
+$$
+calorias = \delta_0 + \overset{(-)}{\delta_1} mujer + v
+$$
+
+Digamos, además, que el sexo de los jueces tiene una influencia sobre la cantidad de libertades condicionales que conceden en un día. Supondremos que la mayoría de los convictos que solicitan libertad condicional son hombres y, además, que una parte importante de ellos se encuentra condenado por cometer delitos de agresión en contra de otras mujeres. Por este motivo, diremos que las jueces mujeres serán menos indulgentes (en promedio) en sus sentencias sobre libertades condicionales.
+
+$$
+libertades = \beta_0 + \overset{(+)}{\beta_1} calorias + \overset{(-)}{\beta_2} mujer + u
+$$
+
+**2)** Definir la media condicional de sexo contra calorías y libertades concedidas.
+
+**a)** Digamos que las mujeres consumen en promedio 100 calorías menos que los hombres al desayuno (correlación inversa). Llamar a este parámetro "delta_mujer" **(1 punto)**.
+
+```{r}
+
+delta_mujer <- -100
+```
+
+**b)** Digamos, además, que las jueces mujeres liberan a 1 persona menos en promedio al día (correlación inversa). Llamar a este parámetro "beta_mujer" **(1 punto)**.
+
+```{r}
+
+beta_mujer <- -1
+```
+
+**c)** Vamos a codificar la variable sexo como una dummy, donde 1 corresponde a mujeres y 0 a hombres. Tomar muestra de 300 observaciones utilizando la funcion rbinom(). Especificar size =1 y prob = 0.5. Definir semilla con set.seed(1). Llamar al objeto "mujer" **(1 punto)**.
+
+```{r}
+
+set.seed(1)
+
+mujer <- rbinom(n = 300, size = 1, prob = 0.5)
+```
+
+**d)** ¿De no incluir esta variable en nuestro modelo, en que dirección (positiva o negativa) se sesgara nuestro estimador de calorías? Justifique brevemente **(1 punto)**.
+
+#### Azucar
+
+Supongamos, además, que la calidad de la alimentación de los jueces también es un factor relevante en el modelo. Específicamente, nos interesa la cantidad de azucar refinada que consumen los jueces al desayuno. Por una parte, sabemos que el azucar tendra una asociación directa con la cantidad de calorías consumidas al desayuno.
+
+$$
+calorias = \delta_0 + \overset{(-)}{\delta_1} mujer + \overset{(+)}{\delta_2} azucar + v
+$$
+
+Por otra parte, vamos a suponer que el azucar también tiene una relación con la cantidad de libertades condicionales concedidas por los jueces. Dado que las calorías derivadas del azucar refinado proveen energía de corta duración, los jueces con mayores consumos de azucar se agotarán con mayor rapidez en el transcurso del día y concederán un menor número de libertades condicionales en comparación con aquellos jueces que obtienen sus calorias de alimentos saludables.
+
+**3)** Definir la media condicional de consumo de azucar refinado contra calorías y libertades.
+
+**a)** Vamos a medir esta variable en gramos de azucar consumido. Sabemos que cada gramo de azucar contiene 3.87 calorías (correlación directa). Llamar a este parámetro "delta_azucar" **(1 punto)**.
+
+```{r}
+
+delta_azucar <- 3.87
+```
+
+**b)** Por otra parte, diremos que las calorías derivadas del azucar tendrán la mitad del efecto que las calorías derivadas de alimentos saludables sobre las libertades condicionales. Esto es, cada gramo de azucar reducira en delta_azucar \* beta_calorias / 2 el número de libertades concedidas (correlación inversa) **(2 puntos)**.
+
+```{r}
+
+beta_azucar <- -delta_azucar*beta_calorias/2
+```
+
+Queremos que nuestra distribución de consumo de azucar este limitada en cero (nadie puede consumir cantidades negativas de azucar) y tenga una cola más larga hacia la derecha (right skew), donde muchas personas consumen cantidades moderadas de azucar y pocas consumen cantidades altas. Para esto, tomaremos una muestra de una distribución log-normal.
+
+La distribución log-normal es una distribución continua cuyo logaritmo sigue una distribución normal. Si una variable Y sigue una distribución normal, exp(Y) sigue una distribución log-normal (les servirá para el curso de redes).
+
+**c)** Tomar una muestra de 300 observaciones de azucar utilizando rnorm() con media 4 y desviación estándar 0.5. Aplicar transformación exp() a la muestra y asignar a objeto "azucar". Definir semilla con set.seed(2) **(2 puntos)**.
+
+```{r}
+
+set.seed(2)
+
+azucar <- exp(rnorm(n=300, mean=4, sd=0.5))
+```
+
+**d) BONUS:** Graficar histograma de la distribución de azucar con ggplot(). Utilizar geom_histogram() con argumento bins=100 **(1 punto)**.
+
+```{r}
+
+azucar_df <- data.frame(azucar = azucar)
+
+ggplot(azucar_df, aes(x=azucar))+
+  geom_histogram(bins = 100, fill="steelblue")+
+  theme_minimal()
+```
+
+**e)** ¿De no incluir esta variable en nuestro modelo, en que dirección (positiva o negativa) se sesgara nuestro estimador de calorías? Justifique brevemente **(1 punto)**.
+
+### Calorías
+
+Ya que tenemos los controles relevantes para obtener condiciones ceteris paribus en nuestro modelo, podemos definir nuestra variable explicativa de interés. Dado que nos dimos cuenta que las calorías se ven afectadas por las variables sexo y azucar, tenemos que modelar la variable considerando estos efectos.
+
+$$
+calorias = \delta_0 + \overset{(-)}{\delta_1} mujer + \overset{(+)}{\delta_2} azucar + v
+$$
+
+**a)** Definir media de calorías cuando las variables mujer y azucar toman valor cero. Vamos a decir que la media de calorías consumidas al desayuno por hombres que no consumen azucar es de 500. Llamar a este objeto delta_cero **(1 punto)**.
+
+```{r}
+
+delta_cero <- 500
+```
+
+**b)** Definir error asociado al consumo de calorías. Queremos que el consumo de calorías siga una distribución aproximadamente normal, pero sabemos que la variable no puede tomar valores negativos (*por definición, el rango de la distribución normal es infinito*). Para lograr esta forma funcional necesitamos que nuestro error siga una distribución truncada en -400 (500 + delta_mujer + v \>= 0). Para obtener esta distribución, usaremos un truco basado en el teorema del límite central **(3 puntos)**.
+
+-   Definir semilla con set.seed(3) para reproducibilidad
+
+-   Crear un vector vacío llamado "v" asignandole c()
+
+-   Iniciar un loop for desde 1 al 300 (tamaño de la muestra)
+
+-   En cada iteración del loop, asignar a objeto "error" la **media (sampling distribution)** de una muestra tomada de una distribución uniforme con runif(). Utilizar parámetros n=5, min=-400 y max=400.
+
+-   Por consistencia del estimador (media), cambiar el n de runif() nos permite manipular la varianza de nuestra sampling distribution. A mayor n, menor será la varianza. Como regla general, buscamos que haya mucha variabilidad en nuestra variable explicativa. Recordemos que la suma de cuadrados totales de x (SSTx) reduce la varianza de nuestros estimadores.
+
+-   La media de la distribución uniforme es el promedio entre el mínimo y el máximo. Los parámetros -400 y 400 nos aseguran que el error tendrá media 0.
+
+-   Por teorema del limite central (CLT), sabemos que la sampling distribution aproximará una distribución normal asintótica (en la medida que nuestra muestra sea suficientemente grande).
+
+-   Finalmente, añadir el resultado de cada iteración del loop al vector v, redefiniendo el vector v con el comando c(v, error)
+
+El resultado es una variable aproximadamente normal truncada entre -400 y 400 con media 0.
+
+```{r}
+
+set.seed(3)
+
+v <- c()
+
+for (i in 1:300) {
+  
+  error <- mean(runif(n = 5, min = -400, max = 400))
+  
+  v <- c(v, error)
+  
+}
+```
+
+**c)** Tomar muestra de calorias utilizando delta_cero, delta_mujer, mujer, delta_azucar, azucar, y v (**3 puntos**).
+
+```{r}
+
+calorias <- delta_cero + delta_mujer*mujer + delta_azucar*azucar + v
+
+```
+
+### Error & Heterocedasticidad
+
+Vamos a definir el error de nuestro proceso generador de datos de libertades condicionales. A diferencia de la vez anterior, en esta ocasión vamos a asumir que el proceso por el que se generan los datos trasgrede el supuesto $Var(u|\textbf{x})=\sigma^2$. Esto es, la varianza del error no será constante a lo largo del dominio de nuestros predictores.
+
+Específicamente, diremos que la varianza del error incluirá alguna función de nuestros predictores $Var(u|\textbf{x})=\sigma^2h(\textbf{x})$. Ojo, estamos hablando de la varianza, esta formulación no transgrede el supuesto $E(u|\textbf{x})=0$.
+
+**1)** Tomar muestra de error de $y|\textbf{x}$ (**2 puntos**).
+
+-   Para esto, utilizaremos la función rtruncnorm() del paquete truncnorm. A diferencia de la función rnorm(), esta función recibe los valores a= limite inferior y b= limite superior. Por lo tanto, nos asegura que no tomaremos observaciones fuera del rango especificado.
+
+-   Ya que la media de libertades condicionales concedidas por jueces mujeres que consumen cero calorías corresponde a 7, sabemos que nuestro error no puede ser menor que -7. De lo contrario, podriamos generar una observación con un número negativo de libertades condicionales concedidas, lo cual sabemos que no es posible.
+
+-   Diremos que la varianza del error dependerá en forma directa de nuestra variable de interés calorias. Esto es, a mayor número de calorías consumidas, mayor será la varianza del error: $Var(u|\textbf{x})=\sigma^2h(calorias)$. Específicamente, diremos que $\sigma^2=1$ y que $h(calorias)=\frac{calorias^2}{90000}$.
+
+-   Comenzamos definiendo una semilla con set.seed(4)
+
+-   Tomar una muestra de 300 errores con rtruncnorm()
+
+    -   Utilizar límite inferior (a) igual a -7 y límite superior igual a 7
+
+    -   Utilizar mean = 0, para mantener el supuesto $E(u|\textbf{x})=0$
+
+    -   Definir parámetro sd como un vector de valores obtenidos de los valores de calorias, $sd(u)=\sqrt{\sigma^2h(calorias)}=\sqrt{1*\frac{calorias^2}{90000}}=\frac{calorias}{300}$
+
+-   Asignar muestra de errores a objeto llamado "u"
+
+```{r}
+
+set.seed(4)
+
+u <- rtruncnorm(n=300, a=-7, b=7, mean=0, sd=calorias/300)
+
+```
+
+**2)** Graficar distribución de calorias contra errores con ggplot() **(2 puntos)**.
+
+-   Crear un data frame llamado "u_df"
+
+-   Crear columna para errores y columna para calorias
+
+-   Hacer un scatter plot con geom_point()
+
+-   Interpretar gráfico
+
+```{r}
+
+u_df <- data.frame(u=u, calorias=calorias)
+
+ggplot(u_df, aes(x=calorias, y=u))+
+  geom_point(color="lightcoral")+
+  theme_minimal()
+```
+
+### Libertades condicionales
+
+Ahora ya estamos listos para tomar una muestra de libertades condicionales concedidas por nuestros jueces en un día. Recordemos las variables y parámetros relevantes para hacer esto.
+
+-   beta_cero
+
+-   beta_calorias y calorias
+
+-   beta_mujer y mujer
+
+-   beta_azucar y azucar
+
+-   u
+
+**1)** Tomar muestra de libertades condicionales utilizando la función del modelo lineal múltiple. Redondear resultado para obtener observaciones enteras con round() y digits=0. Asignar a objeto llamado "libertades" (**2 puntos**).
+
+```{r}
+
+libertades <- round(beta_cero + beta_calorias*calorias + beta_mujer*mujer + beta_azucar*azucar + u)
+```
+
+**2)** Crear data frame llamado "hungry_judge" con todas las variables de nuestro modelo. Incluir una columna por variable. Asignar nombres correspondientes **(2 puntos)**.
+
+-   libertades
+
+-   calorias
+
+-   mujer
+
+-   azucar
+
+```{r}
+
+hungry_judge <- data.frame(libertades=libertades, calorias=calorias, mujer=mujer, azucar=azucar)
+```
+
+## Investigadores
+
+Ahora vamos a analizar los datos que observamos en nuestro data frame hungry_judge. Pero iremos paso por paso.
+
+**1)** Comenzaremos tomando algunas estadísticas descriptivas de nuestra muestra.
+
+**a)** Aplicar función summary() al data frame hungry_judge **(1 punto)**.
+
+```{r}
+
+summary(hungry_judge)
+```
+
+**b)** Tomar la matriz de correlaciones entre las variables con cor() sobre data frame hungry_judge **(1 punto)**.
+
+```{r}
+
+cor(hungry_judge)
+```
+
+**c)** Como vimos la sesión pasada, la interpretación unitaria de calorías es poco conveniente. Transformar la variable creando una nueva columna en el data frame con el nombre "calorias100" **(1 punto)**.
+
+```{r}
+
+hungry_judge$calorias100 <- hungry_judge$calorias / 100
+```
+
+**2)** Ajustar un modelo lineal simple de libertades contra calorias100.
+
+**a)** Ajustar modelo lineal con función lm(). Asignar a objeto "modelo_simple". Tomar summary() de modelo simple. Asignar a objeto "modelo_simple_summary". Imprimir modelo_simple_summary **(1 punto)**.
+
+```{r}
+
+modelo_simple <- lm(libertades ~ calorias100, data=hungry_judge)
+
+modelo_simple_summary <- summary(modelo_simple)
+
+print(modelo_simple_summary)
+```
+
+**b)** Interpretar coeficientes del modelo (intercepto y betas) y analizar su significancia **(1 punto)**.
+
+**c)** Tomar coeficiente de determinación y error estándar de la regresión. Pueden calcularlos o tomarlos del objeto summary con modelo_simple_summary\$sigma y modelo_simple_summary\$r.squared. Asignar a "modelo_simple_SER" y "modelo_simple_rsq". Imprimir objetos e interpretar **(2 punto)**.
+
+```{r}
+
+modelo_simple_SER <- sqrt(sum(modelo_simple$residuals^2)/(nrow(hungry_judge)-2))
+
+modelo_simple_SER <- modelo_simple_summary$sigma
+
+modelo_simple_rsq <- 1 - sum(modelo_simple$residuals^2)/sum((hungry_judge$libertades - mean(hungry_judge$libertades))^2)
+  
+modelo_simple_rsq <- modelo_simple_summary$r.squared
+
+print(modelo_simple_SER)
+
+print(modelo_simple_rsq)
+```
+
+**d)** Graficar libertades contra calorias100 usando ggplot(). Graficar puntos con geom_point() y ajustar un modelo lineal sobre los puntos con geom_smooth().
+
+```{r}
+
+ggplot(hungry_judge, aes(x=calorias100, y=libertades))+
+  geom_point(color="cyan4")+
+  geom_smooth(method="lm", se=TRUE, color="cyan4")+
+  xlab("Calorias")+
+  ylab("Libertades condicionales")+
+  theme_minimal()
+
+```
+
+**3)** Correr un segundo modelo lineal con lm() agregando la variable "mujer".
+
+**a)** Asignar a objeto "modelo_mujer". Tomar summary() del modelo. Asignar a objeto "modelo_mujer_summary". Imprimir modelo_mujer_summary **(1 punto)**.
+
+```{r}
+
+modelo_mujer <- lm(libertades ~ calorias100 + mujer, data=hungry_judge)
+
+modelo_mujer_summary <- summary(modelo_mujer)
+
+print(modelo_mujer_summary)
+```
+
+**b)** Interpretar coeficientes del modelo (intercepto y betas) y analizar su significancia. Interpretar coeficiente de determinación y error estándar de la regresión **(2 puntos)**.
+
+-   ¿Qué cambio respecto del modelo anterior?
+
+-   Justifique a que puede deberse este cambio. Aludir a variables omitidas y dirección en el sesgo de los estimadores.
+
+**c)** Graficar libertades contra calorias100 agregando el argumento color=mujer dentro de aes(). Graficar scatter plot con geom_point() ajustar un modelo lineal con geom_smooth() **(1 punto)**.
+
+Ojo, primero hay que transformar la variable mujer a factor con as.factor().
+
+```{r}
+
+#hungry_judge$mujer <- as.factor(hungry_judge$mujer)
+
+ggplot(hungry_judge, aes(x=calorias100, y=libertades, color=as.factor(mujer)))+
+  geom_point()+
+  geom_smooth(method="lm", se=FALSE)+
+  xlab("Calorias")+
+  ylab("Libertades condicionales")+
+  theme_minimal()
+```
+
+**4)** Correr un tercer modelo lineal con lm() agregando también la variable "azucar".
+
+**a)** Asignar a objeto "modelo_azucar". Tomar summary() del modelo. Asignar a objeto "modelo_azucar_summary". Imprimir modelo_azucar_summary **(1 punto)**.
+
+```{r}
+
+modelo_azucar <- lm(libertades ~ calorias100 + mujer + azucar, data=hungry_judge)
+
+modelo_azucar_summary <- summary(modelo_azucar)
+
+print(modelo_azucar_summary)
+```
+
+**b)** Interpretar coeficientes del modelo (intercepto y betas) y analizar su significancia. Interpretar coeficiente de determinación y error estándar de la regresión **(2 puntos)**.
+
+-   ¿Qué cambio respecto del modelo anterior?
+
+-   Justifique a que puede deberse este cambio. Aludir a variables omitidas y dirección del sesgo de los estimadores.
+
+### Colinealidad
+
+Esta forma de modelar el consumo de azucar podría ser incómoda ya que correlaciona fuertemente con las calorías y podría afectar la eficiencia de nuestros estimadores.
+
+**1)** Desagregar la variable calorias en calorias derivadas del azucar y calorías no derivadas del azucar **(2 puntos)**.
+
+-   Crear variable calorias100_azucar en data frame hungry_judge
+
+-   Crear variable calorias100_salud en data frame hungry_judge
+
+```{r}
+
+hungry_judge$calorias100_azucar <- azucar * delta_azucar / 100
+
+hungry_judge$calorias100_salud <- hungry_judge$calorias100 - hungry_judge$calorias100_azucar
+```
+
+**2)** Volver a ajustar un modelo lineal, esta vez incluyendo como predictores **(2 puntos)** :
+
+-   calorias100_salud
+
+-   calorias100_azucar
+
+-   mujer
+
+```{r}
+
+modelo_multiple <- lm(libertades ~ calorias100_salud + calorias100_azucar + mujer, data = hungry_judge)
+
+modelo_multiple_summary <- summary(modelo_multiple)
+
+print(modelo_multiple_summary)
+```
+
+**3)** Interpretar coeficientes del modelo **(2 puntos)**.
+
+-   ¿Qué cambio respecto del modelo anterior?
+
+-   Justifique a que puede deberse este cambio. Aludir a colinealidad y varianza de los estimadores.
+
+### Heterocedasticidad
+
+Dado que sabemos que la forma funcional de nuestro modelo es la correcta, sabemos que nuestros betas son insesgados para los parámetros poblacionales. No obstante, esto no es suficiente para que nuestros contrastes de hipótesis sean válidos. Los errores estándar y valores p solo son válidos bajo el cumplimiento del supuesto de homocedasticidad.
+
+Comenzaremos explorando el cumplimiento de este supuesto de forma visual.
+
+**1)** Extraer residuos y valores ajustados del modelo_multiple. Crear nuevas columnas "residual" y "fitted" en el data frame hungry_judge para estos valores (**2 puntos**).
+
+```{r}
+
+hungry_judge$residual <- modelo_multiple$residuals
+
+hungry_judge$fitted <- modelo_multiple$fitted.values
+```
+
+**2)** **a)** Crear grafico de residuos (y) contra valores ajustados (x) con ggplot(). Usar geom_point() para hacer un scatter plot **(2 puntos)**.
+
+```{r}
+
+ggplot(data=hungry_judge, aes(x=fitted, y=residual))+
+  geom_point(color="cyan4")+
+  geom_smooth(method="lm", se=FALSE, color="cyan4")+
+  theme_minimal()
+```
+
+**b)** Interpretar gráfico ¿Por qué usamos estas variables? **(1 punto)**.
+
+#### Prueba de White
+
+Para hacer una prueba de White de heterocedasticidad, una vía simple es hacerlo a través de los valores ajustados.
+
+**1)** Crear columnas para residuos y valores ajustados al cuadrado en el data frame hungry_judge. Asignar nombres "residual_sq" y "fitted_sq" (**1 punto**).
+
+```{r}
+hungry_judge$residual_sq <- hungry_judge$residual^2
+
+hungry_judge$fitted_sq <- hungry_judge$fitted^2
+```
+
+**2)** Ajustar un modelo lm() de los residuos al cuadrado contra los valores ajustados y los valores ajustados al cuadrado de nuestro modelo. Asignar a "modelo_white". Tomar summary() y asignar a "modelo_white_summary" (**2 puntos**).
+
+```{r}
+
+modelo_white <- lm(residual_sq ~ fitted + fitted_sq, data=hungry_judge)
+
+modelo_white_summary <- summary(modelo_white)
+
+print(modelo_white_summary)
+```
+
+**3)** Calcular estadístico F de modelo_white **(3 puntos)**.
+
+-   Extraer R cuadrado de modelo_white_summary con \$r.squared
+
+-   Calcular estadístico $F=\frac{\frac{R^2}{2}}{\frac{1-R^2}{n-3}}$ Asignar a "F_statistic"
+
+-   Calcular significancia con pf(F_statistic, df1=2, df2=nrow(hungry_judge)-3, lower.tail = FALSE)
+
+-   Imprimir estadístico F y valor p, comparar con valores de modelo_white_summary\$fstatistic
+
+```{r}
+
+modelo_white_rsq <- modelo_white_summary$r.squared
+
+F_statistic <- (modelo_white_rsq/2) / ((1-modelo_white_rsq)/(nrow(hungry_judge)-3))
+
+p_value <- pf(F_statistic, df1=2, df2=nrow(hungry_judge)-3, lower.tail = FALSE)
+
+print(F_statistic)
+
+print(p_value)
+```
+
+**3)** Interpretar resultado. Recordar que nuestra hipótesis nula es que los errores son homocedásticos (**1 punto**).
+
+#### Errores robustos
+
+Ya que hemos diagnosticado un problema de heterocedasticidad, necesitamos una forma de corregir este problema para que los errores estándar de nuestros estimadores sean válidos y podamos usarlos para construir intervalos de confianza y hacer contraste de hipótesis.
+
+El método más utilizado se conoce como errores robustos.
+
+![](images/Errores%20robustos.png)
+
+**1)** Calcular errores robustos con la función vcovHC() del paquete sandwich **(2 puntos)**.
+
+-   Calcular matriz de varianza covarianza consistente a la heterocedasticidad con vcovHC()
+
+-   Tomar los elementos diagonales con diag()
+
+-   Tomar la raíz cuadrada con sqrt()
+
+-   Asignar a objeto "errores_robustos"
+
+```{r}
+
+errores_robustos <- sqrt(diag(vcovHC(modelo_multiple)))
+```
+
+**2)** Extraer errores regulares de modelo_multiple_summary con \$coefficients\[, "Std. Error"\]. Asignar a objeto errores_regulares **(1 punto)**.
+
+```{r}
+
+errores_regulares <- modelo_multiple_summary$coefficients[, "Std. Error"]
+
+print(errores_regulares)
+```
+
+**3)** Imprimir errores_robustos y errores_regulares. Comparar. ¿Cómo cambian? **(1 punto)**.
+
+```{r}
+
+print(errores_regulares)
+
+print(errores_robustos)
+```
+
+#### Errores robustos con bootstrap
+
+Ahora vamos a estimar los errores estándar de forma empírica con el método de bootstrap.
+
+Bootstrap es una forma empírica de generar una sampling distributions a partir de la muestra observada. Se basa en hacer simulaciones a partir de la muestra.
+
+Nota: La forma rigurosa de obtener errores robustos con bootstrap es usando una forma específica de bootstrap llamado "wild bootstrap". Para esta instancia usaremos la forma más básica de boostrap no paramétrico conocido como "cases o pairs bootstrap".
+
+**1)** Comenzamos definiendo el número de muestreos del bootstrap y creando una matriz vacía con suficientes filas para nuestras iteraciones y suficientes columnas para todos los coeficientes de nuestro modelo_multiple (**1 punto**).
+
+-   Asignar numero de iteraciones a "iteraciones_bootstrap"
+
+-   Asignar matriz de coeficientes a "matriz_coeficientes"
+
+```{r}
+
+iteraciones_bootstrap <- 1000
+
+matriz_coeficientes <- matrix(NA, iteraciones_bootstrap, length(coef(modelo_multiple)))
+```
+
+**2)** Ahora, generamos un loop for. En cada iteración **(3 puntos)**:
+
+-   Tomamos una muestra del data frame hungry_judge **con reemplazo**. Asignar a "muestra".
+
+-   Ajustamos un modelo lineal múltiple la muestra. Asignar a "modelo"
+
+-   Extraemos los coeficientes del modelo ajustado y los pegamos en la fila correspondiente de la matriz de coeficientes.
+
+```{r}
+
+for(i in 1:iteraciones_bootstrap){
+  
+  muestra <- hungry_judge[sample(1:nrow(hungry_judge), replace = TRUE), ]
+  
+  modelo <- lm(libertades ~ calorias100_salud + calorias100_azucar + mujer, data = muestra)
+  
+  matriz_coeficientes[i, ] <- coef(modelo)
+}
+```
+
+**3)** Tomamos la desviación estándar de cada columna de nuestra matriz de coeficientes con la función apply(). Asignar a errores_robustos_bootstrap **(1 punto)**.
+
+```{r}
+
+errores_robustos_bootstrap <- apply(matriz_coeficientes, 2, sd)
+```
+
+**4)** Imprimir errores_regulares, errores_robustos y errores_robustos_bootstrap **(1 punto)**.
+
+```{r}
+
+print(errores_robustos_bootstrap)
+print(errores_robustos)
+print(errores_regulares)
+```
+
+**4)** Imprimir tabla de regresiones con la función stargazer() del paquete stargazer para compar modelo con errores robustos y modelo regular.
+
+```{r}
+
+stargazer(modelo_multiple, modelo_multiple, modelo_multiple,
+          se = list(as.vector(errores_regulares), 
+                    as.vector(errores_robustos), 
+                    as.vector(errores_robustos_bootstrap)), 
+          type = "text")
+```
