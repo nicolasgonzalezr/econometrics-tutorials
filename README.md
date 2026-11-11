@@ -1,8 +1,6 @@
 # econometrics-tutorials
 Interactive Quarto tutorials for an introductory econometrics course.
 
-**Author:** Nicolás González Raposo
-
 | Folder | Contents |
 | --- | --- |
 | [exercises](exercises/) | Worksheets to complete in R and Quarto. |
@@ -32,3 +30,11 @@ Data paths are relative to each document's folder. Worksheets contain blanks to 
 - Wooldridge, J. M. (2019). [*Introductory econometrics: A modern approach*](https://www.cengage.com/c/introductory-econometrics-a-modern-approach-7e-wooldridge/9781337558860) (7th ed.). Cengage Learning.
 - Wooldridge, J. M. (2010). [*Econometric analysis of cross section and panel data*](https://mitpress.mit.edu/9780262232586/econometric-analysis-of-cross-section-and-panel-data/) (2nd ed.). MIT Press.
 - Long, J. S. (1997). [*Regression models for categorical and limited dependent variables*](https://www.sagepub.com/shop/buy-a-book/regression-models-for-categorical-and-limited-dependent-variables-1-6071). SAGE Publications.
+
+## Contact and attribution
+
+For questions about the tutorials or their implementation:
+
+**Nicolás González-Raposo** — [GitHub](https://github.com/nicolasgonzalezr)
+
+If you use or adapt this material, please credit the author and link to this repository.
