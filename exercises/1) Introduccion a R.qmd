@@ -218,7 +218,7 @@ Hagalo con el operador \$ y luego repita la instrucción con dplyr y la función
 
 ```
 
-4\) Graficar una distribución normal estándar a partir de las densidades de los puntajes z en el intervalo de -3 hasta 3. Utilizar función dnorm() y la función seq(). Implementar saltos de 0.01 con la función seq() para obtener 600 puntos en el intervalo solicitado con la función dnorm().
+4\) Graficar una distribución normal estándar a partir de las densidades de los puntajes z en el intervalo de -3 hasta 3. Utilizar función dnorm() y la función seq(). Implementar saltos de 0.01 con la función seq() para obtener 601 puntos en el intervalo solicitado con la función dnorm().
 
 ```{r}
 

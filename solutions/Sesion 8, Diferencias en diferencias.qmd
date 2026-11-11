@@ -59,71 +59,89 @@ data('voucher')
 
 Para conseguir la estructura de los datos en 4 grupos, tenemos que excluir de la muestra aquellas personas que fueron asignadas al tratamiento pero no accedieron a participar del programa de vouchers.
 
-**2)** Contar la cantidad de personas en cada combinación de haber sido seleccionados (select) y haber participado (choice) con dplyr.
+**2)** Contar la cantidad de personas en cada combinación de haber sido seleccionados (select) y haber participado (choice) con dplyr **(1 punto)**.
 
--   Seleccionar columnas select y choice del data frame voucher
+-   Agrupar voucher por select y choice con group_by()
 
--   Tomar table()
+-   Tomar table() de select con summarize()
 
 -   Imprimir
 
 ```{r}
 
-
+voucher %>%
+  group_by(select, choice) %>%
+  summarize(cuenta = table(select))
 ```
 
-**3)** Filtrar base de datos excluyendo al grupo de personas que fueron seleccionadas y no participaron del programa de vouchers con la función subset(). Además, renombrar variable select como "voucher" con rename(). Este es nuestro tratamiento. Guardar data frame filtrado como "voucherFiltrado".
+**3)** Filtrar base de datos excluyendo al grupo de personas que fueron seleccionadas y no participaron del programa de vouchers con la función subset(). Además, renombrar variable select como "voucher" con rename(). Este es nuestro tratamiento. Guardar data frame filtrado como "voucher_filtrado" **(1 punto)**.
 
 ```{r}
 
-
-
+voucher_filtrado <- voucher %>%
+  subset(!(select == 1 & choice == 0)) %>%
+  subset(!(select == 0 & choice == 1)) %>%
+  rename(voucher=select)
 ```
 
 Ahora tenemos que transformar nuestros datos a formato largo. Esto quiere decir que tendremos dos filas para cada observación, donde los puntajes de matemáticas de los dos períodos estarán en la misma columna.
 
 ```{r}
 
-score_90 <- voucherFiltrado %>%
+score_90 <- voucher_filtrado %>%
   mutate(math = mnce90,
+         year_90 = 1,
          year_94 = 0
          ) %>%
   select(-mnce, -mnce90)
 
 
-score_94 <- voucherFiltrado %>%
+score_94 <- voucher_filtrado %>%
   mutate(math = mnce,
+         year_90 = 0,
          year_94 = 1
          ) %>%
   select(-mnce, -mnce90)
 
-voucherLong <- full_join(score_90, score_94) %>%
+voucher_long <- full_join(score_90, score_94) %>%
   mutate(year = ifelse(year_94==1, 94, 90))
 ```
 
-**4)** Ahora tomemos las medias condicionales con dplyr.
+**4)** Ahora tomemos las medias condicionales con dplyr **(1 punto)**.
 
 Pasos a seguir
 
--   Agrupar voucherLong por voucher y por year con la función group_by().
+-   Agrupar voucher_long por voucher y por year con la función group_by().
 
 -   Tomar medias condicionales de la columna "math" con la función summarize().
 
 -   Transformar la columna voucher a factor con as.factor() y mutate().
 
--   Asignar resultado a "conditionalMeans".
+-   Asignar resultado a "conditional_means".
 
--   Imprimir conditionalMeans.
+-   Imprimir conditional_means.
 
 ```{r}
 
+conditional_means <- voucher_long %>%
+  group_by(voucher, year) %>%
+  summarize(math = mean(math, na.rm=TRUE)) %>%
+  mutate(voucher=as.factor(voucher))
 
+print(conditional_means)
 ```
 
-**5)** Graficar math contra year de conditionalMeans con ggplot(). Asignar color segun voucher.
+**5)** Graficar math contra year de conditional_means con ggplot(). Asignar color segun voucher **(1 punto)**.
 
 ```{r}
 
+ggplot(data=conditional_means, aes(x=year, y=math, color=voucher))+
+  geom_point(size=3)+
+  geom_line(linewidth=1)+
+  ggtitle("Diff in diff")+
+  xlab("Year")+
+  ylab("Math score")+
+  theme_minimal()
 ```
 
 La formula del estimador de diferencias en diferencias corresponde a:
@@ -138,7 +156,7 @@ $$
 \hat{\delta} = (\bar{y}_{2,T} - \bar{y}_{1,T}) - (\bar{y}_{2,C} - \bar{y}_{1,C})
 $$
 
-**6)** Extraer medias condicionales del data frame conditionalMeans.
+**6)** Extraer medias condicionales del data frame conditional_means **(1 punto)**.
 
 -   Extraer primer elemento de la columna math, transformar con as.numeric () y asignar a "control_90".
 
@@ -150,12 +168,26 @@ $$
 
 ```{r}
 
+control_90 <- as.numeric(conditional_means[1, "math"])
+
+control_94 <- as.numeric(conditional_means[2, "math"])
+
+tratamiento_90 <- as.numeric(conditional_means[3, "math"])
+
+tratamiento_94 <- as.numeric(conditional_means[4, "math"])
 ```
 
-**7)** Calcular diferencias en diferencias a partir de la formula provista. Asignar a "diff_in_diff". Imprimir resultado.
+**7)** Calcular diferencias en diferencias a partir de la formula provista. Asignar a "diff_in_diff". Imprimir resultado **(1 punto)**.
 
 ```{r}
 
+diff_in_diff <- (tratamiento_94 - control_94) - (tratamiento_90 - control_90)
+
+diff_in_diff_2 <- (tratamiento_94 - tratamiento_90) - (control_94 - control_90)
+
+print(diff_in_diff)
+
+print(diff_in_diff_2)
 ```
 
 **8)** Interpretar estimador diff_in_diff **(1 punto)**.
@@ -165,24 +197,27 @@ $$
 
 ### Supuesto de tendencias paralelas (parallel trends)
 
-El estimador de diferencias en diferencias corresponde al ATE (Average Treatment Effect) bajo el supuesto de tendencias paralelas. Esto quiere decir que, en ausencia del tratamiento, la media del grupo tratado habría cambiado en la misma medida que la media del grupo no tratado (contrafactual).
+El estimador de diferencias en diferencias corresponde al ATT (Average Treatment Effect on the Treated) bajo el supuesto de tendencias paralelas. Esto quiere decir que, en ausencia del tratamiento, la media del grupo tratado habría cambiado en la misma medida que la media del grupo no tratado (contrafactual).
 
 ```{r}
 
-contrafactual <-
+contrafactual <- as.numeric(conditional_means[3, "math"] + conditional_means[2, "math"] - conditional_means[1, "math"])
 
-filas <- data.frame(voucher= as.factor(c(1, 1)), year= c(90, 94) , math= c(tratamiento_90, contrafactual))
+filas <- data.frame(voucher= as.factor(c(1, 1)), year= c(90, 94) , math= c(as.numeric(conditional_means[3, "math"]), contrafactual))
 
 contrafactual_df <- rbind(conditional_means, filas)
 
 contrafactual_df$contrafactual <- as.factor(c(rep(0, times=4), rep(1, times=2)))
+
+conditional_means$contrafactual <- as.factor(rep(0, times=4))
 ```
 
 ```{r}
 
-ggplot(data=contrafactual_df, aes(x=year, y=math, color=voucher, shape=contrafactual, linetype=contrafactual))+
+ggplot(data=contrafactual_df, aes(x=year, y=math, color=voucher, shape=contrafactual))+
   geom_point(size=3)+
-  geom_line(linewidth=1)+
+  geom_line(linewidth=1, linetype="dashed")+
+  geom_line(data=conditional_means, linewidth=1)+
   ggtitle("Diff in diff contrafactual")+
   xlab("Year")+
   ylab("Math score")+
@@ -199,10 +234,13 @@ $$
 
 Donde $d2$ corresponde a una variable dummy para el segundo período, y $dT$ corresponde a una variable dummy para el grupo tratado. En este modelo, el coeficiente de la interacción $\delta_1$ es el estimador DID.
 
-**1)** Ajustar un modelo lineal DID de math contra voucher. Asignar a "did_simple". Imprimir summary().
+**1)** Ajustar un modelo lineal DID de math contra voucher. Asignar a "did_simple". Imprimir summary() **(1 punto)**.
 
 ```{r}
 
+did_simple <- lm(math ~ voucher + year_94 + voucher*year_94, data = voucher_long)
+
+summary(did_simple)
 ```
 
 **2)** Interpretar resultados del modelo DID **(1 punto)**.
@@ -214,17 +252,17 @@ Donde $d2$ corresponde a una variable dummy para el segundo período, y $dT$ cor
 
 Ahora incluiremos controles
 
-**1)** Ajustar un modelo lineal DID de math contra voucher. Incluir controles para "black" e "hispanic". Asignar a "did_controles".
+**1)** Ajustar un modelo lineal DID de math contra voucher. Incluir controles para "black" e "hispanic". Asignar a "did_controles" **(1 punto)**.
 
 ```{r}
 
+did_controles <- lm(math ~ voucher + year_94 + voucher*year_94 + black + hispanic, data=voucher_long )
 ```
 
-**2)** Imprimir stargazer() de did_simple y did_controles.
+**2)** Imprimir stargazer() de did_simple y did_controles **(1 punto)**.
 
 ```{r}
-
-
+stargazer(did_simple, did_controles, type="text")
 ```
 
 **3)** Interpretar did_controles, haciendo referencia a los cambios observados respecto de did_simple. Aludir a variables omitidas **(1 punto)**.
@@ -234,7 +272,7 @@ Ahora incluiremos controles
 
 Construir gráfico de diferencias en diferencias a partir de los coeficientes (medias condicionales) estimadas en la regresión did_controles.
 
-**4)** Construir medias condicionales a partir de did_controles.
+**4)** Construir medias condicionales a partir de did_controles **(1 punto)**.
 
 -   Extraer el coeficiente relevantes para construir "control_90".
 
@@ -249,7 +287,23 @@ Construir gráfico de diferencias en diferencias a partir de los coeficientes (m
 -   Extraer y sumar los coeficientes relevantes para construir "contrafactual_94".
 
 ```{r}
+# Control
 
+control_90 <- did_controles$coefficients["(Intercept)"]
+
+control_94 <- did_controles$coefficients["(Intercept)"] + did_controles$coefficients["year_94"]
+
+# Tratamiento
+
+tratamiento_90 <- did_controles$coefficients["(Intercept)"] + did_controles$coefficients["voucher"]
+
+tratamiento_94 <- did_controles$coefficients["(Intercept)"] + did_controles$coefficients["voucher"] + did_controles$coefficients["year_94"] + did_controles$coefficients["voucher:year_94"]
+
+# Contrafactual
+
+contrafactual_90 <- did_controles$coefficients["(Intercept)"] + did_controles$coefficients["voucher"]
+
+contrafactual_94 <- did_controles$coefficients["(Intercept)"] + did_controles$coefficients["voucher"] + did_controles$coefficients["year_94"]
 
 ```
 
@@ -259,12 +313,21 @@ Construir gráfico de diferencias en diferencias a partir de los coeficientes (m
 
 contrafactual_controles <- data.frame(contrafactual= as.factor(c(0, 0, 0, 0, 1, 1)), voucher= as.factor(c(0, 0, 1, 1, 1, 1)), year= rep(c(90, 94), times=3) , math= c(control_90, control_94, tratamiento_90, tratamiento_94, contrafactual_90, contrafactual_94))
 
+medias_controles <- data.frame(contrafactual= as.factor(rep(0, times=4)), voucher= as.factor(rep(c(0,1), each=2)), year= rep(c(90, 94), times=2) , math= c(control_90, control_94, tratamiento_90, tratamiento_94))
 ```
 
-**6)** Graficar modelo did_controles con ggplot(). Incluir contrafactual en el gráfico.
+**6)** Graficar modelo did_controles con ggplot(). Incluir contrafactual en el gráfico **(1 punto)**.
 
 ```{r}
 
+ggplot(data=contrafactual_controles, aes(x=year, y=math, color=voucher, shape=contrafactual))+
+  geom_point(size=3)+
+  geom_line(linewidth=1, linetype="dashed")+
+  geom_line(data=medias_controles, linewidth=1)+
+  ggtitle("Diff in diff")+
+  xlab("Year")+
+  ylab("Math score")+
+  theme_minimal()
 ```
 
 **7)** Interpretar grafico de did_controles. ¿Cómo cambia respecto del gráfico de did_simple? **(1 punto)**.
@@ -272,17 +335,4 @@ contrafactual_controles <- data.frame(contrafactual= as.factor(c(0, 0, 0, 0, 1, 
 ::: callout-note
 :::
 
-## Diff-in-Diff-in-Diff (DDD)
-
-Cambiamos $dT$ por $dG$ para representar que el tratamiento se asigna en base a una característica específica de la población, e incorporamos una muestra de control $B$, de una zona donde no se haya aplicado el tratamiento, pero que tenga personas con esa característica. Por lo tanto, tenemos también una dummy $dA$ para la muestra de la zona que estuvo expuesta al tratamiento.
-
-$$
-\hat{\delta}_{DDD} = \hat{\delta}_{DD,A} - \hat{\delta}_{DD,B}
-$$
-
-$$
-y = \beta_0 + \delta_0d2 + \beta_1dG + \delta_1 d2 \cdot dG \\[10pt]
-\beta_2 dA + \delta_2d2 \cdot dA + \beta_3 dG \cdot dA + \delta_3 d2 \cdot dG \cdot dA + u
-$$
-
-**TOTAL: 4 PUNTOS**
+**TOTAL: 15 PUNTOS**

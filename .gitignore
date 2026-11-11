@@ -1,0 +1,17 @@
+.DS_Store
+.quarto/
+*_files/
+*_cache/
+*.docx
+*.html
+.Rhistory
+.RData
+Rplots.pdf
+/solutions/mi_primer_df
+/solutions/mi_primer_df.csv
+/solutions/df_sucio.csv
+/solutions/df_sucio.rds
+/exercises/mi_primer_df
+/exercises/mi_primer_df.csv
+/exercises/df_sucio.csv
+/exercises/df_sucio.rds

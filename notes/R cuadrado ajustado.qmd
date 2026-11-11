@@ -46,7 +46,7 @@ $$
 R^2 = 1 - \frac{\textrm{SSR}/n}{\textrm{SST}/n}
 $$
 
-Pero esta estimación es sesgada, para obtener una estimación insesgada tenemos que calcular el R cuadrado ajustado:
+Para penalizar la inclusión de predictores, podemos calcular el R cuadrado ajustado utilizando los grados de libertad. Este ajuste no garantiza una estimación insesgada del R cuadrado poblacional:
 
 $$
 \bar{R^2} = 1 - \frac{\textrm{SSR}/(n - k - 1)}{\textrm{SST}/(n-1)}
@@ -59,6 +59,8 @@ Veamos que tan grande puede ser el sesgo del R cuadrado regular. Vamos a crear v
 wage_duplicate <- wage1 %>%
   select(lwage, educ, exper, expersq, female, tenure)
 
+set.seed(1)
+
 for (i in 1:30) {
   
   wage_duplicate[[paste0("v_", i)]] <- rnorm(nrow(wage1), 0, 1)
@@ -66,7 +68,7 @@ for (i in 1:30) {
 }
 ```
 
-Vamos a ajustar nuestro modelo bueno contra una muestra reducida de los datos, tal que tendremos solo un dato más que predictores $(n = k + 1)$
+Vamos a ajustar nuestro modelo bueno contra una muestra reducida de los datos, tal que tendremos un grado de libertad residual al incluir las 30 variables irrelevantes $(n = k + 2)$, donde $k$ no incluye el intercepto
 
 ```{r}
 

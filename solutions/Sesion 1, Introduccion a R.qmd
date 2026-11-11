@@ -137,7 +137,7 @@ df_sucio <- read.csv("df_sucio.csv")
 
 ```{r}
 
-mean(df_sucio$numerica)
+mean(df_sucio$variable_numerica)
 ```
 
 4\) Limpiar data frame de suciedad con la función filter() de dplyr utilizando el operador pipe. Utilizar función is.na() para identificar valores NA.
@@ -246,7 +246,7 @@ print(promedio_color)
 
 ggplot(data = df_limpio, aes(x=variable_cuenta)) +
   geom_histogram(fill = "cyan4", alpha = 0.5) +
-  geom_histogram(aes(x=variable_numerica_std), fill = "lightcoral", alpha = 0.5, bins= 100) +
+  geom_histogram(aes(x=variable_numerica_std), fill = "lightcoral", alpha = 0.5, bins= 100)
   
 
 ```
@@ -257,9 +257,9 @@ ggplot(data = df_limpio, aes(x=variable_cuenta)) +
 
 ```{r}
 
-z_one_lower <- qnorm(c(0.9, 0.95, 0.99), mean=0, sd=1)
+z_one_upper <- qnorm(c(0.9, 0.95, 0.99), mean=0, sd=1)
 
-z_one_upper <- qnorm(c(0.9, 0.95, 0.99), mean=0, sd=1, lower.tail=FALSE)
+z_one_lower <- qnorm(c(0.9, 0.95, 0.99), mean=0, sd=1, lower.tail=FALSE)
 
 print(z_one_lower)
 
@@ -271,9 +271,9 @@ print(z_one_upper)
 
 ```{r}
 
-z_two_lower <- qnorm(c(0.95, 0.975, 0.995), mean=0, sd=1)
+z_two_upper <- qnorm(c(0.95, 0.975, 0.995), mean=0, sd=1)
 
-z_two_upper <- qnorm(c(0.95, 0.975, 0.995), mean=0, sd=1, lower.tail=FALSE)
+z_two_lower <- qnorm(c(0.95, 0.975, 0.995), mean=0, sd=1, lower.tail=FALSE)
 
 print(z_two_upper)
 
@@ -291,11 +291,11 @@ print(percentiles)
 
 ```
 
-4\) Graficar una distribución normal estándar a partir de las densidades de los puntajes z en el intervalo de -3 hasta 3. Utilizar función dnorm() y la función seq(). Implementar saltos de 0.01 con la función seq() para obtener 600 puntos en el intervalo solicitado con la función dnorm().
+4\) Graficar una distribución normal estándar a partir de las densidades de los puntajes z en el intervalo de -3 hasta 3. Utilizar función dnorm() y la función seq(). Implementar saltos de 0.01 con la función seq() para obtener 601 puntos en el intervalo solicitado con la función dnorm().
 
 ```{r}
 
-densidad <- dnorm(seq(-3, 3, length.out=600), mean=0, sd=1)
+densidad <- dnorm(seq(-3, 3, by=0.01), mean=0, sd=1)
 ```
 
 Ahora, graficar densidades. Agregar lineas verticales al gráfico representando los intervalos de confianza calculados en la pregunta 2. Utilizar un color diferente para cada intervalo.

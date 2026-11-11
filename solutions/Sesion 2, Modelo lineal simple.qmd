@@ -7,11 +7,9 @@ format: docx
 
 ## Instrucciones
 
-Responder al siguiente caso completando cada una de las preguntas con los códigos y las justificaciones solicitadas. El script con sus respuestas debe ser cargado al repositorio del curso para la evaluación. El nombre del archivo debe ir en el formato "tarea_2_nombre_apellido.qmd". Los archivos deben ser cargados hasta el día jueves 24 de abril.
+Responder al siguiente caso completando cada una de las preguntas con los códigos y las justificaciones solicitadas. Los scripts con sus respuestas deben ser cargados al repositorio del curso para la evaluación. El nombre del archivo debe ir en el formato "tarea_2_nombre_apellido.qmd". Los archivos deben ser cargados hasta el día jueves 24 de abril.
 
 ## The Hungry Judge
-
-Este caso esta inspirado en el artículo de Danziger et al (2011), "Extraneous factors in judicial decisions".
 
 Digamos que queremos estudiar como el hambre afecta las decisiones de libertad condicional concedida por los jueces de Chile. Nuestra hipótesis es que los jueces toman decisiones más severas cuando tienen hambre, y queremos probar esto empíricamente analizando cómo la cantidad de calorias que consumen en el desayuno afecta en la cantidad de libertades condicionales que conceden durante un día.
 
@@ -28,18 +26,18 @@ library(tidyverse)
 
 ### Proceso generador de datos
 
-**1)** Definir el promedio de libertades condicionales concedidas en un día cuando la cantidad de calorías consumidas en el desayuno es cero (el juez se presenta en ayunas al juzgado). Digamos que, en promedio, los jueces que llegan en ayunas otorgarán libertad condicional a 3 personas. Llamar a este parámetro poblacional beta_cero **(1punto)**.
+**1)** Definir el promedio de libertades condicionales concedidas en un día cuando la cantidad de calorías consumidas en el desayuno es cero (el juez se presenta en ayunas al juzgado). Digamos que, en promedio, los jueces que llegan en ayunas otorgarán libertad condicional a 3 personas. Llamar a este parámetro poblacional beta_cero **(1 punto)**.
 
 ```{r}
 
-
+beta_cero <- 3
 ```
 
 **2)** Definir el cambio en libertades condicionales asociado al un incremento de 1 caloría en el desayuno. Digamos que cada caloría adicional incrementa el promedio de libertades condicionales en 0.005. Llamar a este parámetro poblacional beta_uno **(1 punto)**.
 
 ```{r}
 
-
+beta_uno <- 0.005
 ```
 
 **3)** Definir el error asociado a variables no observadas. A.K.A.: Aleatoriedad del proceso generador de datos. Por ejemplo, diferencias individuales de los jueces.
@@ -48,30 +46,39 @@ library(tidyverse)
 
 ```{r}
 
+set.seed(1)
 
+u <- rnorm(100, 0, 1)
 ```
 
-**b)** ¿Podríamos haber escogido otra distribución para los errores? Justifique brevemente en base a los supuestos del modelo lineal por mínimos cuadrados **(1 punto)**.
+**b)** ¿Podríamos haber escogido otra distribución para los errores? Justifique brevemente en base a los supuestos del modelo lineal **(1 punto)**.
 
 **4)** Definir distribución de las calorías consumidas al desayuno, el predictor del modelo. Tomar 100 observaciones de una distribución normal con media 500 calorias y desviación estándar 100 calorias. Definir semilla con set.seed(9) antes de tomar la muestra para reproducibilidad. Ojo, semilla debe ser diferente de la semilla de los errores. **(1 punto)**.
 
 ```{r}
 
+set.seed(9)
+
+x <- rnorm(100, 500, 100)
 ```
 
 **5)** Con todos los elementos anteriores, tomar una muestra de "y" utilizando el proceso generador de datos definido. Aplique la función round() para que los valores de "y" sean enteros (no se puede dar libertad condicional a la fracción de una persona) **(2 puntos)**.
 
 ```{r}
 
+y <- beta_cero + beta_uno*x + u
+
+y <- round(y)
 ```
 
-**6)** Almacenar x e y en un data frame llamado hungry_judge. Crear columna "calorias" para x y columna "libertades" para y **(1 punto)**.
+**6)** Almacenar x e y en un data frame llamado hungry_judge. Crear columna "calorias" para x y columna "libertades" para y **(2 puntos)**.
 
 ```{r}
 
+hungry_judge <- data.frame(calorias = x, libertades = y)
 ```
 
-**7)** Graficar calorias (x) contra libertades (y) usando ggplot(), utilizar geom_point() para visualizar las observaciones y geom_smooth(method = "lm", se=FALSE) para ajustar un modelo lineal sobre los puntos **(3 puntos)**.
+**7)** Graficar calorias contra libertades usando ggplot(), utilizar geom_point() para visualizar las observaciones y geom_smooth(method = "lm", se=FALSE) para ajustar un modelo lineal sobre los puntos **(3 puntos)**.
 
 Utilizar theme_minimal() y elegir un color para los puntos y la linea del gráfico.
 
@@ -79,24 +86,27 @@ Agregar etiquetas "Calorias desayuno" al eje x y "Libertades condicionales" al e
 
 ```{r}
 
+ggplot(data = hungry_judge, aes(x=calorias, y=libertades))+
+  geom_point(color="cyan4")+
+  geom_smooth(method = "lm", se=FALSE, color = "cyan4")+
+  xlab("Calorias desayuno")+
+  ylab("Libertades condicionales")+
+  theme_minimal()
 ```
 
 ### Investigadores
 
-Ahora, analicemos los datos que la naturaleza nos ha proporcionado. Para cada juez (i), tenemos una cantidad de calorías (x) y una cantidad de libertades condicionales (y) en un día.
+Ahora, analicemos los datos que la naturaleza nos ha proporcionado. Para cada juez, tenemos una cantidad de calorías (x) y una cantidad de libertades condicionales (y) en un día.
 
 **1) a)** Ajustar un modelo lineal simple de libertades condicionales contra calorías consumidas al desayuno con la función lm(). Asignar a objeto llamado modelo_hungry_judge **(1 punto)**.
-
-```{r}
-
-
-```
 
 **b)** Imprimir tabla de coeficientes con la función summary() e interpretar resultados (intercepto y calorias) **(2 puntos)**.
 
 ```{r}
 
+modelo_hungry_judge <- lm(libertades~calorias, data = hungry_judge)
 
+summary(modelo_hungry_judge)
 ```
 
 **2)** Crear dos nuevas columnas en el data frame hungry_judge.
@@ -109,13 +119,21 @@ Ahora, analicemos los datos que la naturaleza nos ha proporcionado. Para cada ju
 
 # Método 1, calcular los valores ajustados y los residuos de forma manual a partir de los coeficientes del modelo. Pueden acceder a los coeficientes del modelo con la sintaxis modelo_hungry_judge$coefficients[i]
 
+modelo_hungry_judge$fitted <- modelo_hungry_judge$coefficients[1] + modelo_hungry_judge$coefficients[1]*hungry_judge$calorias
+
+hungry_judge$residual <- hungry_judge$libertades - modelo_hungry_judge$fitted
 
 # Método 2, extraer los valores ajustados y residuos directamente del objeto modelo con modelo_hungry_judge$fitted.values y modelo_hungry_judge$residuals
 
+hungry_judge$fitted <- modelo_hungry_judge$fitted.values
 
+hungry_judge$residual <- modelo_hungry_judge$residuals
 
 # Método 3, extraer con las funciones fitted() y residuals()
 
+hungry_judge$fitted <- fitted(modelo_hungry_judge)
+
+hungry_judge$residual <- residuals(modelo_hungry_judge)
 
 ```
 
@@ -123,53 +141,39 @@ Ahora, analicemos los datos que la naturaleza nos ha proporcionado. Para cada ju
 
 **1)** Calcular suma de cuadrados totales (SST) del modelo. Llamar al objeto SST **(1 punto)**.
 
-$$
-SST = \Sigma_{i=1}^{n}(y_i - \bar{y})^2
-$$
-
 ```{r}
 
-
+SST <- sum((hungry_judge$libertades - mean(hungry_judge$libertades))^2)
 ```
 
 **2)** Calcular suma de cuadrados explicados (SSE) del modelo. Llamar al objeto SSE **(1 punto)**.
 
-$$
-SSE = \Sigma_{i=1}^{n}(\hat{y_i} - \bar{y})^2
-$$
-
 ```{r}
 
-
+SSE <- sum((hungry_judge$fitted - mean(hungry_judge$libertades))^2)
 ```
 
 **3)** Calcular suma de cuadrados residuales (SSR) del modelo. Llamar al objeto SSR **(1 punto)**.
 
-$$
-SSR = \Sigma_{i=1}^{n} \hat{u_i}^2
-$$
-
 ```{r}
 
-
+SSR <- sum(hungry_judge$residual^2)
 ```
 
 **4)** Verificar que SST = SSE + SSR **(1 punto).**
 
 ```{r}
 
-
+SST == SSE + SSR
 ```
 
 **5)** Calcular coeficiente de determinación (R cuadrado) e interpretar. Llamar al objeto r_squared **(1 punto)**.
 
-$$
-R^2 = \frac{SSE}{SST} = 1 - \frac{SSR}{SST}
-$$
-
 ```{r}
 
+r_squared <- SSE/SST
 
+r_squared <- 1 - SSR/SST
 ```
 
 ### Errores vs residuos
@@ -182,12 +186,12 @@ En este caso, ya que fuimos nosotros los que definimos el proceso generador de d
 
 ```{r}
 
-
+hungry_judge$error <- u
 ```
 
 **2) a)** Crear un gráfico de errores vs residuos con ggplot() **(3 puntos)**.
 
-Asignar calorias al eje x y crear dos lineas con geom_line(), donde una linea corresponda a los errores y otra línea corresponda a los residuos. Deben redefinir aes(y=) para la segunda línea.
+Asignar calorias al eje x y crear dos lineas con geom_line(), donde una linea corresponda a los errores y otra línea corresponda a los residuos. Deben redefinir aes(y=) para cada linea.
 
 Agregar dos líneas horizontales con geom_hline(), una con yintercept en la media de los errores y la otra con yintercept en la media de los residuos.
 
@@ -199,16 +203,23 @@ Agregar etiquetas "Calorias desayuno" al eje x y "Errores vs Residuos" al eje y 
 
 ```{r}
 
-  
+ggplot(hungry_judge, aes(x=calorias))+
+  geom_line(aes(y=error), color="cyan4")+
+  geom_hline(yintercept = mean(hungry_judge$error), color="cyan4")+
+  geom_line(aes(y=residual), color="lightcoral")+
+  geom_hline(yintercept = mean(hungry_judge$residual), color="lightcoral")+
+  xlab("Calorias desayuno")+
+  ylab("Errores vs Residuos")+
+  theme_minimal()
 ```
 
 **b)** Interpretar gráfico **(1 punto)**.
 
 ### Media y varianza de los estimadores
 
-**1)** **BONUS**: Verificar que el estimador de nuestro modelo es insesgado para beta_uno (parámetro población) **(3 puntos)**.
+**1)** **BONUS**: Verificar la siguiente identidad para beta_uno (parámetro población) y explicar por qué implica insesgamiento cuando $E(u \mid x)=0$ **(3 puntos)**.
 
-Ojo, solo podemos hacer esto porque nosotros definimos beta_uno y u (inobservables).
+Ojo, solo podemos hacer esto porque nosotros definimos beta_uno y u (inobservables)
 
 Pasos a seguir:
 
@@ -224,29 +235,53 @@ Pasos a seguir:
 
 -   Verificar que el resultado coincida con beta_hat
 
-![](images/estimador.png)
+$$
+\hat{\beta}_1 = \beta_1 + \frac{\sum_{i=1}^{n}(x_i-\bar{x})u_i}{\mathrm{SST}_x} = \beta_1 + \frac{1}{\mathrm{SST}_x}\sum_{i=1}^{n}d_i u_i
+$$
 
 ```{r}
 
+hungry_judge$libertades <- beta_cero + beta_uno*hungry_judge$calorias + u
 
+modelo_hungry_judge <- lm(libertades ~ calorias, data=hungry_judge)
+
+SSR <- sum(modelo_hungry_judge$residuals^2)
+
+SST_x <- sum((hungry_judge$calorias - mean(hungry_judge$calorias))^2)
+
+d <- hungry_judge$calorias - mean(hungry_judge$calorias)
+
+beta_hat <- modelo_hungry_judge$coefficients[2]
+
+print(beta_hat)
+
+beta_hat_formula <- beta_uno + 1/SST_x * sum(d*u)
+
+print(beta_hat_formula)
+
+isTRUE(all.equal(unname(beta_hat), unname(beta_hat_formula)))
 ```
 
 **2) a)** Calcular varianza del error (asumiendo homocedasticidad). Utilizar función var() sobre los errores (u). Imprimir **(1 punto)**.
 
 ```{r}
 
-
+var(u)
 ```
 
 **b)** ¿Cual es el problema con esta formula? Explicar brevemente. Recordar diferencia entre errores y residuos **(1 punto)**.
 
 **3)** Calcular estimador insesgado de la varianza del error. Asignar a objeto varianza_error_estimada. Imprimir **(1 punto)**.
 
-![](images/Estimador%20error.png)
+$$
+\hat{\sigma}^2 = \frac{1}{n-2}\sum_{i=1}^{n}\hat{u}_i^2 = \frac{\mathrm{SSR}}{n-2}
+$$
 
 ```{r}
 
+varianza_error_estimada <- SSR/(nrow(hungry_judge)-2)
 
+print(varianza_error_estimada)
 ```
 
 **4)** Calcular el error estándar de la regresión. Tomar la raíz de la varianza estimada. Asignar a objeto llamado SER. Imprimir **(1 punto)**.
@@ -255,16 +290,22 @@ SER: Standard Error of the Regression
 
 ```{r}
 
+SER <- sqrt(varianza_error_estimada)
 
+print(SER)
 ```
 
 **5) a)** Calcular el error estándar del estimador beta hat. Asignar a objeto error_beta_hat. Imprimir **(2 puntos)**.
 
-![](images/sd%20beta.png)
+$$
+\operatorname{se}(\hat{\beta}_1) = \frac{\hat{\sigma}}{\sqrt{\mathrm{SST}_x}} = \frac{\hat{\sigma}}{\left(\sum_{i=1}^{n}(x_i-\bar{x})^2\right)^{1/2}}
+$$
 
 ```{r}
 
+error_beta_hat <- SER/sqrt(SST_x)
 
+print(error_beta_hat)
 ```
 
 **b)** Comparar error_beta_hat con el error estándar estimado en modelo_hungry_judge para beta calorias **(3 puntos)**.
@@ -277,7 +318,15 @@ SER: Standard Error of the Regression
 
 ```{r}
 
+summary_hungry_judge <- summary(modelo_hungry_judge)
 
+error_beta_modelo <- summary_hungry_judge$coefficients[2, "Std. Error"]
+
+print(error_beta_modelo)
+
+print(error_beta_hat)
+
+isTRUE(all.equal(unname(error_beta_hat), unname(error_beta_modelo)))
 ```
 
 ### Unidades de medida
@@ -288,6 +337,7 @@ Un problema de nuestro modelo es que las unidades de medida son dificiles de int
 
 ```{r}
 
+hungry_judge$calorias100 <- hungry_judge$calorias / 100
 
 ```
 
@@ -295,7 +345,9 @@ Un problema de nuestro modelo es que las unidades de medida son dificiles de int
 
 ```{r}
 
+modelo_hungry_judge_ajustado <- lm(libertades ~ calorias100, data = hungry_judge)
 
+summary(modelo_hungry_judge_ajustado)
 ```
 
 ### Average Treatment Effect (ATE)
@@ -306,22 +358,39 @@ Nos dimos cuenta que algunos jueces desayunan en el "Café Calabozo", donde los 
 
 Si encontramos diferencias en libertades condicionales según el café que frecuentan los jueces, podríamos estar cerca de encontrar un tratamiento para impedir que el hambre perjudique injustamente el resultado de algunas personas en el sistema penal.
 
-**1)** Cargar data frame desayunos al entorno de trabajo desde el archivo "desayunos.csv". Utilizar función read.csv(). Asignar a objeto desayunos y visualizar data frame **(1 punto)**.
+Crear desayunos.csv
 
 ```{r}
 
+alpha <- 4
 
+tau <- 2
+
+x_dummy <- rbinom(100, 1, 0.5)
+
+y <- round(alpha + tau*x_dummy + u)
+
+hungry_judge_ate <- data.frame(libertades = y, cafe_misericordia = x_dummy)
+
+write.csv(hungry_judge_ate, file = "../data/desayunos.csv", row.names = FALSE)
+```
+
+**1)** Cargar data frame desayunos al entorno de trabajo desde el archivo desayunos.csv. Utilizar función read.csv(). Asignar a objeto desayunos y visualizar data frame **(1 punto)**.
+
+```{r}
+
+desayunos <- read.csv(file = "../data/desayunos.csv")
 ```
 
 **2) a)** Ajustar modelo lm() de libertades contra cafe_misericordia, variable dummy que nos indica en que café desayunaron los jueces. Asignar resultado a modelo_desayunos. Imprimir summary() **(1 punto)**.
 
 ```{r}
 
+modelo_desayunos <- lm(libertades ~ cafe_misericordia, data = desayunos)
 
+summary(modelo_desayunos)
 ```
 
 **b)** Interpretar coeficientes **(1 punto)**.
 
 **c)** Sabemos que los betas son insesgados para los Average Treatment Effect (ATE) bajo asignación aleatoria. ¿En este caso, podemos atribuir las diferencias de medias a un efecto de los desayunos? Justifique brevemente **(1 punto)**.
-
-TOTAL: 42 puntos

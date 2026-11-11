@@ -56,8 +56,10 @@ Profundicemos en nuestro modelo de los jueces hambrientos.
 **1)** ¿Creen que el comportamiento de los jueces puede explicarse exclusivamente por las calorías que consumieron al desayuno? ¿Por qué podría ser relevante implementar un modelo de regresión múltiple en este caso? Considere asignación aleatoria y condición "ceteris paribus" en estudios observacionales. Justifique brevemente **(2 puntos)**.
 
 $$
+\begin{aligned}
 calorias = \delta_0 + \delta_1 mujer + \delta_2 azucar + v \\[15pt]
 libertades = \beta_0 + \beta_1 calorias + \beta_2 mujer + \beta_3 azucar + u
+\end{aligned}
 $$
 
 **2)** Comencemos definiendo los parámetros de base en nuestro modelo de jueces hambrientos.
@@ -243,7 +245,7 @@ Específicamente, diremos que la varianza del error incluirá alguna función de
 
 -   Ya que la media de libertades condicionales concedidas por jueces mujeres que consumen cero calorías corresponde a 7, sabemos que nuestro error no puede ser menor que -7. De lo contrario, podriamos generar una observación con un número negativo de libertades condicionales concedidas, lo cual sabemos que no es posible.
 
--   Diremos que la varianza del error dependerá en forma directa de nuestra variable de interés calorias. Esto es, a mayor número de calorías consumidas, mayor será la varianza del error: $Var(u|\textbf{x})=\sigma^2h(calorias)$. Específicamente, diremos que $\sigma^2=1$ y que $h(calorias)=\frac{calorias^2}{90000}$.
+-   Diremos que la varianza del error dependerá en forma directa de nuestra variable de interés calorias. Esto es, a mayor número de calorías consumidas, mayor será la varianza del error: $Var(u|\textbf{x})=\sigma^2h(calorias)$. Para la normal subyacente antes de truncar, fijamos $\sigma^2=1$ y $h(calorias)=\frac{calorias^2}{90000}$; la truncación modifica la varianza resultante.
 
 -   Comenzamos definiendo una semilla con set.seed(4)
 
@@ -488,7 +490,7 @@ print(modelo_multiple_summary)
 
 ### Heterocedasticidad
 
-Dado que sabemos que la forma funcional de nuestro modelo es la correcta, sabemos que nuestros betas son insesgados para los parámetros poblacionales. No obstante, esto no es suficiente para que nuestros contrastes de hipótesis sean válidos. Los errores estándar y valores p solo son válidos bajo el cumplimiento del supuesto de homocedasticidad.
+Antes de redondear la respuesta, la forma lineal y la condición $E(u \mid \mathbf{x})=0$ implican que los betas son insesgados para los parámetros poblacionales. El redondeo puede introducir pequeñas desviaciones de esa forma lineal. No obstante, esto no es suficiente para que nuestros contrastes de hipótesis sean válidos. Los errores estándar convencionales y sus valores p requieren el supuesto de homocedasticidad.
 
 Comenzaremos explorando el cumplimiento de este supuesto de forma visual.
 
@@ -567,7 +569,9 @@ Ya que hemos diagnosticado un problema de heterocedasticidad, necesitamos una fo
 
 El método más utilizado se conoce como errores robustos.
 
-![](images/Errores%20robustos.png)
+$$
+\widehat{\operatorname{Var}}(\hat{\beta}_j) = \frac{\sum_{i=1}^{n}\hat{r}_{ij}^{\,2}\hat{u}_i^{\,2}}{\mathrm{SSR}_j^{\,2}}
+$$
 
 **1)** Calcular errores robustos con la función vcovHC() del paquete sandwich **(2 puntos)**.
 
@@ -608,7 +612,7 @@ Ahora vamos a estimar los errores estándar de forma empírica con el método de
 
 Bootstrap es una forma empírica de generar una sampling distributions a partir de la muestra observada. Se basa en hacer simulaciones a partir de la muestra.
 
-Nota: La forma rigurosa de obtener errores robustos con bootstrap es usando una forma específica de bootstrap llamado "wild bootstrap". Para esta instancia usaremos la forma más básica de boostrap no paramétrico conocido como "cases o pairs bootstrap".
+Nota: El "wild bootstrap" permite heterocedasticidad manteniendo fijos los predictores. Para esta instancia usaremos el bootstrap no paramétrico conocido como "cases o pairs bootstrap", que también permite heterocedasticidad bajo muestreo independiente de observaciones.
 
 **1)** Comenzamos definiendo el número de muestreos del bootstrap y creando una matriz vacía con suficientes filas para nuestras iteraciones y suficientes columnas para todos los coeficientes de nuestro modelo_multiple (**1 punto**).
 

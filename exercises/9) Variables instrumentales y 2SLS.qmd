@@ -119,7 +119,7 @@ Digamos que creemos que la educación de los padres podría ser un buen instrume
 
 ### Etapa 1: Modelo en forma reducida
 
-Podemos, por lo tanto, escribir una proyección lineal a la cual llamaremos la forma reducida para educación. Esta es la primera etapa de nuestra estimación. Ajustamos una regresión de la variable endógena contra todas las variables de nuestro modelo principal, incluyendo además los instrumentos.
+Podemos, por lo tanto, escribir una proyección lineal a la cual llamaremos la forma reducida para educación. Esta es la primera etapa de nuestra estimación. Ajustamos una regresión de la variable endógena contra las variables exógenas de nuestro modelo principal y los instrumentos adicionales.
 
 $$
 educ = \pi_0 + \pi_1exper + \pi_2 meduc + \pi_3 feduc + v_2
@@ -130,7 +130,7 @@ $$
 educ = educ^* + v_2
 $$
 
-Si al menos uno de los coeficientes de nuestros instrumentos es significativo para educ $(\pi_2 \neq 0 \space \text{o} \space \pi_3 \neq 0)$, diremos que se cumple el criterio de relevancia y que el modelo esta **indentificado**. Para testear esto de forma rigurosa deberíamos hacer una prueba de exlusión de significancia conjunta (prueba F, donde buscamos un estadístico F mayor o igual a 10 para descartar instrumentos débiles bajo homocedasticidad). Por simplicidad, en este caso nos conformaremos con la prueba t de significancia individual (donde buscamos un estadístico mayor a 3.2 en valor absoluto).
+Si al menos uno de los coeficientes de nuestros instrumentos es significativo para educ $(\pi_2 \neq 0 \quad \text{o} \quad \pi_3 \neq 0)$, diremos que se cumple el criterio de relevancia y que el modelo esta **indentificado**. Para testear esto de forma rigurosa deberíamos hacer una prueba de exlusión de significancia conjunta (prueba F, donde un estadístico F mayor o igual a 10 es una regla orientativa, no una garantía de ausencia de instrumentos débiles bajo homocedasticidad). Por simplicidad, en este caso nos conformaremos con la prueba t de significancia individual (donde buscamos un estadístico mayor a 3.2 en valor absoluto).
 
 **1)** Ajustar modelo de forma reducida para educación. Asignar a "modelo_reducido". Imprimir summary().
 
@@ -150,7 +150,7 @@ Con la forma reducida de educación, podemos descomponer la endogeneidad de nues
 educ = educ^* + v_2
 $$
 
-Bajo el supuesto de exogeneidad de nuestros instrumentos, los valores ajustados de la regresión en forma reducida $\hat{educ} \space (educ^*)$ son una porción de educación que no está correlacionada $abil$. Por otra parte, los residuos de la forma reducida $\hat{v_2} \space (v_2)$ son una porción de educación que si esta correlacionada con $abil$. Para eliminar el sesgo de nuestra variable de interés y enviarlo al error del modelo principal $(u)$, estimamos la segunda etapa de la regresión contra los valores ajustados de la forma reducida. De esta forma, obtenemos los estimadores IV para nuestra regresión. Matemáticamente, reemplazamos la variable endógena por su forma reducida en la ecuación sesgada. Comenzamos con:
+Bajo el supuesto de exogeneidad de nuestros instrumentos, los valores ajustados de la regresión en forma reducida $\hat{educ} \quad (educ^*)$ son una porción de educación que no está correlacionada $abil$. Por otra parte, los residuos de la forma reducida $\hat{v_2} \quad (v_2)$ son una porción de educación que si esta correlacionada con $abil$. Para eliminar el sesgo de nuestra variable de interés y enviarlo al error del modelo principal $(u)$, estimamos la segunda etapa de la regresión contra los valores ajustados de la forma reducida. De esta forma, obtenemos los estimadores IV para nuestra regresión. Matemáticamente, reemplazamos la variable endógena por su forma reducida en la ecuación sesgada. Comenzamos con:
 
 $$
 log(wage) = \beta_0 + \beta_1educ + \beta_2exper + u
@@ -207,7 +207,7 @@ Pasos a seguir:
 
 Los coeficientes que obtendremos de este modelo son los correctos, pero los errores estándar no son válidos, ya que no estamos agregando el segundo componente al error compuesto. No es recomendable estimar la segunda etapa de forma manual.
 
-**2)** Volver a estimar el modelo 2SLS con la función ivreg() del paquete ivreg. La sintáxis para ivreg() corresponde a $y \sim x_1 + x_2 +...+ x_k \space | \space z_1 + z_2 + ...+z_h$, donde las $\textbf{x}$ corresponden a todas las variables del modelo original, y las $\textbf{z}$ corresponden a las variables exógenas y los instrumentos adicionales. Asignar a "modelo_iv". Imprimir summary().
+**2)** Volver a estimar el modelo 2SLS con la función ivreg() del paquete ivreg. La sintáxis para ivreg() corresponde a $y \sim x_1 + x_2 +...+ x_k \quad | \quad z_1 + z_2 + ...+z_h$, donde las $\textbf{x}$ corresponden a todas las variables del modelo original, y las $\textbf{z}$ corresponden a las variables exógenas y los instrumentos adicionales. Asignar a "modelo_iv". Imprimir summary().
 
 ```{r}
 
@@ -284,7 +284,7 @@ En los mismos grupos anteriores, imaginen que son revisores de una prestigiosa r
 
 ## II. Intention-to-treat
 
-Cuando la selección a un tratamiento es exógena, pero la decisión de participar no lo es, el uso de variables instrumentales nos puede entregar una estimación del **efecto de ofrecer el tratamiento**.
+Cuando la selección a un tratamiento es exógena, pero la decisión de participar no lo es, comparar por selección permite estimar el **efecto de ofrecer el tratamiento (ITT)**. Utilizar la selección como instrumento para la participación permite estimar el **efecto local del tratamiento en quienes participan por haber sido seleccionados (LATE)**, bajo los supuestos de relevancia, exclusión, exogeneidad y monotonicidad.
 
 #### Voucher
 
@@ -378,8 +378,10 @@ A diferencia de las variables instrumentales auxiliares, donde salimos a buscar 
 Digamos que tenemos una variable medida con error:
 
 $$
+\begin{aligned}
 x_1 = x_1^* + e_1 \\[15pt]
 x_1^* = x_1 - e_1
+\end{aligned}
 $$
 
 El modelo verdadero es por lo tanto:
@@ -397,9 +399,11 @@ $$
 Donde:
 
 $$
+\begin{aligned}
 y = \beta_0 + \beta_1 x_1^* + v \\[15pt]
 y = \beta_0 + \beta_1 (x_1 - e_1) + v \\[15pt]
 y = \beta_0 + \beta_1 x_1 + (v - \beta_1 e_1)
+\end{aligned}
 $$
 
 Y por lo tanto:
@@ -433,11 +437,13 @@ Si tenemos una segunda medición de $x_1^*$, digamos $x_{12}$, podemos usar esta
 
 ### b) Modelos estructurales: Identificación en estimación de sistemas (condición de orden)
 
-Un segundo caso de variables instrumentales implicadas en el modelo se asocia a la estimación de sistemas. Digamos que tenemos las variables $y_1, y_2, x_1, z_1 \space \text{y} \space z_2$, y queremos estimar el siguiente modelo.
+Un segundo caso de variables instrumentales implicadas en el modelo se asocia a la estimación de sistemas. Digamos que tenemos las variables $y_1, y_2, x_1, z_1 \quad \text{y} \quad z_2$, y queremos estimar el siguiente modelo.
 
 $$
+\begin{aligned}
 y_1 = \alpha_{10} + \beta_{12} y_{2} + \gamma_{11} x_{1} + \delta_{11}z_{1} + u_1 \\[15pt]
-y_2 = \alpha_{20} + \beta_{21} y_{1} + \gamma_{21} x_{1} + \delta_{22}z_{2} + u_2 
+y_2 = \alpha_{20} + \beta_{21} y_{1} + \gamma_{21} x_{1} + \delta_{22}z_{2} + u_2
+\end{aligned}
 $$
 
 La condición de orden nos dice que necesitamos al menos tantos instrumentos (variables exógenas) como variables explicativas (endógenas).
@@ -452,6 +458,6 @@ $$
 y = \beta_0 + \beta_1x_1 + ... + \beta_kx_k + \gamma q + u 
 $$
 
-Si $\text{E}(u | x, w) = 0$, podemos estimar $\gamma$ de forma consistente usando $\hat{q}=f(w, \hat{\delta)}$. En español, podemos estimar un regresor en una primera etapa y después utilizarlo en nuestro modelo, siempre y cuando hagamos un ajuste de grados de libertad correspondiente para reflejar la incertidumbre de la primera etapa (análogo a 2SLS).
+Si $\text{E}(u | x, w) = 0$, podemos estimar $\gamma$ de forma consistente usando $\hat{q}=f(w, \hat{\delta})$. En español, podemos estimar un regresor en una primera etapa y después utilizarlo en nuestro modelo, siempre y cuando hagamos un ajuste de la matriz de varianzas y covarianzas que refleje la incertidumbre de la primera etapa (análogo a 2SLS).
 
 **TOTAL: 7 PUNTOS**

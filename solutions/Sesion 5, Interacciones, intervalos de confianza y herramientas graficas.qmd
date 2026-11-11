@@ -197,7 +197,7 @@ Utilizamos la función rep() porque debemos repetir la secuencia para cada nivel
 
 ```{r}
 
-exper <- rep(seq(from=min(beauty$exper), to=max(beauty$exper), length.out=50), times=2)
+exper <- rep(seq(from=min(wage1$exper), to=max(wage1$exper), length.out=50), times=2)
 ```
 
 **2)** Crear "expersq" con el cuadrado de exper **(1 punto)**.
@@ -289,7 +289,7 @@ En este modelo, $\beta_{educ}$ es el efecto parcial de un año adicional de educ
 
 Por otra parte, $\beta_{exper}+2\beta_{expersq} \times exper$ es el efecto parcial de un año de experiencia para una persona con una educación de 12 años.
 
-Finalmente, $\beta_{exper}+2\beta_{expersq} \times exper + \beta_{exper*educ} \times educ$ es el efecto parcial de un año de experiencia para una persona con una educación por sobre o debajo de 12 años. El hecho que $\beta_{exper*educ}$ tenga signo negativo nos dice que el retorno de la experiencia para personas con escolaridad por debajo de los 12 años será mayor que para las personas con escolaridad por encima de los 12 años. Aunque esta relación no es estadísticamente significativa.
+Finalmente, $\beta_{exper}+2\beta_{expersq} \times exper + \beta_{exper*educ} \times (educ-12)$ es el efecto parcial de un año de experiencia para una persona con una educación por sobre o debajo de 12 años. El hecho que $\beta_{exper*educ}$ tenga signo negativo nos dice que el retorno de la experiencia para personas con escolaridad por debajo de los 12 años será mayor que para las personas con escolaridad por encima de los 12 años. Aunque esta relación no es estadísticamente significativa.
 
 **3)** Interpretar resultados del modelo **(3 puntos)**.
 
@@ -305,7 +305,7 @@ Para graficar esta interacción, generaremos 5 valores de interés para la varia
 
 ```{r}
 
-exper <- rep(seq(from=min(beauty$exper), to=max(beauty$exper), length.out=50), times=5)
+exper <- rep(seq(from=min(wage1$exper), to=max(wage1$exper), length.out=50), times=5)
 ```
 
 **2)** Crear "expersq" con el cuadrado de exper **(1 punto)**.
@@ -360,7 +360,7 @@ ggplot(data=wage1, aes(x=exper, y=lwage, color=as.factor(educ_centered)))+
 
 ## Construcción de intervalos de confianza
 
-Si tomaramos muchas muestras de la población y para cada muestra tomaramos una estimación del parámetro poblacional, el intervalo de confianza nos informa el rango de valores donde encontraríamos las estimaciones de dicho parámetro en x% de las instancias. Bajo la hipótesis nula $\beta_j=0$, encontramos evidencia en contra de dicha hipótesis cuando nuestro intervalo de confianza no incluye el 0.
+Si tomaramos muchas muestras de la población y para cada muestra construyéramos un intervalo de confianza de x%, aproximadamente x% de esos intervalos contendrían el parámetro poblacional, bajo los supuestos del modelo. Bajo la hipótesis nula $\beta_j=0$, encontramos evidencia en contra de dicha hipótesis cuando nuestro intervalo de confianza no incluye el 0.
 
 Calculemos el intervalo de confianza para nuestra interacción entre experiencia y educación.
 
@@ -461,8 +461,8 @@ print(intervalo_confianza)
 
 #### Breve nota sobre intervalo de confianza vs valor p
 
-Interpretamos el intervalo de confianza como el porcentaje de veces que encontraremos un valor de beta dentro del intervalo calculado en el muestreo.
+Interpretamos el nivel de confianza como el porcentaje de intervalos que contendrían el parámetro poblacional al repetir el muestreo y el procedimiento de construcción.
 
 En contraparte, interpretamos el valor p como el porcentaje de veces en que encontraremos un valor de beta al menos tan extremo como el observado en el muestreo si la hipótesis nula es correcta.
 
-Para hacer contraste de hipótesis de una cola de forma rápida mirando una tabla de regresión, basta dividir el valor p calculado en 2.
+Para hacer contraste de hipótesis de una cola con una distribución nula simétrica, dividimos el valor p de dos colas en 2 cuando la estimación tiene la dirección de la alternativa; si tiene la dirección opuesta, usamos 1 menos la mitad del valor p de dos colas.

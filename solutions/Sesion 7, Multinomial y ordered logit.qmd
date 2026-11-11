@@ -51,7 +51,7 @@ Utilizaremos la versión 90 de la encuesta CEP, que fue recolectada entre los me
 
 ```{r}
 
-cep_bruta <- read.csv("base_90.csv")
+cep_bruta <- read.csv("../data/base_90.csv")
 ```
 
 #### Seleción de variables
@@ -153,7 +153,7 @@ $$
 $$
 
 $$
-\mathcal{L}(\boldsymbol{\beta}|\mathbf{y})= \prod_{j=1}^J 1[y_i=j] \textrm{P}(y=j | \mathbf{x})
+\mathcal{L}(\boldsymbol{\beta}|\mathbf{y})= \prod_{i=1}^{n}\prod_{j=1}^{J}\textrm{P}(y_i=j\mid\mathbf{x}_i)^{1[y_i=j]}
 $$
 
 ### Estimando un modelo multinomial
@@ -184,7 +184,7 @@ stargazer(multinomial_simple, type="text")
 
 ### Contrastes
 
-Si queremos un contraste entre otras respuestas del modelo, por ejemplo, entre salud y corrupción, podemos tomar la diferencia entre los betas. Esta diferencia también sigue una distribución logística.
+Si queremos un contraste entre otras respuestas del modelo, por ejemplo, entre salud y corrupción, podemos tomar la diferencia entre los betas. El índice construido con esta diferencia corresponde a los log-odds de una respuesta contra la otra.
 
 $$
 \Lambda [\textbf{x} (\boldsymbol{\beta_{m}} - \boldsymbol{\beta_{r}})]
@@ -244,7 +244,7 @@ print(betas_salud_corrupcion)
 
 print(multinomial_contraste_summary$coefficients["salud",])
 
-betas_salud_corrupcion==multinomial_contraste_summary$coefficients["salud",]
+isTRUE(all.equal(betas_salud_corrupcion, multinomial_contraste_summary$coefficients["salud",], tolerance=1e-4))
 ```
 
 ### Probabilidad estimada
@@ -312,7 +312,7 @@ print(probs["pensiones"])
 
 print(prob_pensiones)
 
-probs["pensiones"]==prob_pensiones
+isTRUE(all.equal(unname(probs["pensiones"]), unname(prob_pensiones)))
 ```
 
 ### Efectos parciales para variables continuas
@@ -536,13 +536,13 @@ print(APE_mujer)
 
 partial_effects <- matrix(nrow=9, ncol=4)
 
-for (i in min(cep$izquierda):max(cep$izquierda)) {
+for (i in min(cep$izquierda):(max(cep$izquierda)-1)) {
   
   probs <- predict(multinomial_multiple, newdata=data.frame(izquierda=i, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
 
   probs_2 <- predict(multinomial_multiple, newdata=data.frame(izquierda=i+1, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
 
-  partial_effects[i,] <-  probs_2 - probs
+  partial_effects[i+1,] <-  probs_2 - probs
   
 }
 
@@ -558,20 +558,20 @@ ggplot(data = partial_effects, aes(x=izquierda, y=efecto, color=respuesta)) +
 
 #### Efecto parcial contra probabilidad estimada
 
-**8)** Graficar cambio en probabilidades estimadas de ordered_multiple para los diferentes niveles de izquierda. Asumir que izquierda es una variable discreta.
+**8)** Graficar cambio en probabilidades estimadas de multinomial_multiple para los diferentes niveles de izquierda. Asumir que izquierda es una variable discreta.
 
 ```{r}
-probabilities <- matrix(nrow=9, ncol=4)
+probabilities <- matrix(nrow=10, ncol=4)
 
 for (i in min(cep$izquierda):max(cep$izquierda)) {
   
   probs <- predict(multinomial_multiple, newdata=data.frame(izquierda=i, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
 
-  probabilities[i,] <-  probs
+  probabilities[i+1,] <-  probs
   
 }
 
-probabilities <- data.frame(probabilities = c(probabilities[,1], probabilities[,2], probabilities[,3], probabilities[,4]), izquierda=rep(0:8, times=4), respuesta=rep(c("delincuencia", "pensiones", "corrupcion", "salud"), each=9))
+probabilities <- data.frame(probabilities = c(probabilities[,1], probabilities[,2], probabilities[,3], probabilities[,4]), izquierda=rep(0:9, times=4), respuesta=rep(c("delincuencia", "pensiones", "corrupcion", "salud"), each=10))
 
 ggplot(data = probabilities, aes(x=izquierda, y=probabilities, color=respuesta)) +
   geom_line(linewidth=1.5)+
@@ -583,9 +583,10 @@ ggplot(data = probabilities, aes(x=izquierda, y=probabilities, color=respuesta))
 
 ## [Modelos de variable dependiente ordinal: Ordered logit]{.underline}
 
-El modelo ordinal también es similar al modelo logístico binario, pero donde se estima un vector de parámetros adicionales $(\boldsymbol{\alpha}\space o \space \boldsymbol{\tau})$, los cuales corresponden a los puntajes de corte (en log-odds) de un nivel al siguiente. Para obtener la probabilidad de que la variable de respuesta corresponda a cada nivel, calculamos la probabilidad de que los log-odds estimados estén por sobre o por debajo del puntaje de corte para ser clasificados en dicho nivel.
+El modelo ordinal también es similar al modelo logístico binario, pero donde se estima un vector de parámetros adicionales $(\boldsymbol{\alpha}\quad o \quad \boldsymbol{\tau})$, los cuales corresponden a los puntajes de corte (en log-odds) de un nivel al siguiente. Para obtener la probabilidad de que la variable de respuesta corresponda a cada nivel, calculamos la probabilidad de que los log-odds estimados estén por sobre o por debajo del puntaje de corte para ser clasificados en dicho nivel.
 
 $$
+\begin{aligned}
 \textrm{P}(y=0|\textbf{x})=\textrm{P}(\textbf{x}\boldsymbol{\beta}+e \leq \alpha_1|\textbf{x}) \\
 \textrm{P}(y=1|\textbf{x})=\textrm{P}(\alpha_1 < \textbf{x}\boldsymbol{\beta}+e \leq \alpha_2 | \textbf{x}) \\
 ... \\
@@ -593,9 +594,11 @@ $$
 ... \\
 \textrm{P}(y=J-1|\textbf{x})=\textrm{P}(\alpha_{J-1} \leq \textbf{x}\boldsymbol{\beta}+e \leq \alpha_J | \textbf{x}) \\
 \textrm{P}(y=J|\textbf{x})=\textrm{P}(\textbf{x}\boldsymbol{\beta}+e > \alpha_J | \textbf{x})
+\end{aligned}
 $$ A diferencia del modelo multinomial, tenemos un solo vector de coeficientes betas que explican la relación de log-odds entre los predictores y las respuestas, y el vector $(\boldsymbol{\beta})$ no incluye un intercepto. No obstante, la estimación de los coeficientes $\boldsymbol{\alpha}$ es matemáticamente equivalente a estimar un modelo con múltiples interceptos (un intercepto por cada transición entre niveles de la respuesta).
 
 $$
+\begin{aligned}
 \textrm{P}(y=0|\textbf{x}) = \Lambda(\alpha_1-\textbf{x}\boldsymbol{\beta}) \\
 \textrm{P}(y=1|\textbf{x}) = \Lambda(\alpha_2-\textbf{x}\boldsymbol{\beta}) -\Lambda(\alpha_1-\textbf{x}\boldsymbol{\beta}) \\
 ... \\
@@ -603,6 +606,7 @@ $$
 ... \\
 \textrm{P}(y=J-1|\textbf{x}) = \Lambda(\alpha_J-\textbf{x}\boldsymbol{\beta}) -\Lambda(\alpha_{J-1}-\textbf{x}\boldsymbol{\beta}) \\
 \textrm{P}(y=J|\textbf{x}) = 1 - \Lambda(\alpha_J-\textbf{x}\boldsymbol{\beta})
+\end{aligned}
 $$
 
 Obtenemos, al igual que en el modelo multinomial, una probabilidad estimada de que los niveles de los predictores pertenezcan a cada uno de los niveles de la variable de respuesta.
@@ -610,7 +614,7 @@ Obtenemos, al igual que en el modelo multinomial, una probabilidad estimada de q
 ### Likelihood
 
 $$
-\mathcal{L}(\boldsymbol{\beta},\boldsymbol{\alpha}|\mathbf{y})= \prod_{j=1}^J \prod_{y_i=j} [\Lambda(\alpha_j-\textbf{x}_i\boldsymbol{\beta}) -\Lambda(\alpha_{j-1}-\textbf{x}_i\boldsymbol{\beta})]
+\mathcal{L}(\boldsymbol{\beta},\boldsymbol{\alpha}|\mathbf{y})= \prod_{i=1}^{n}\prod_{j=0}^{J}\left[\Lambda(\alpha_{j+1}-\mathbf{x}_i\boldsymbol{\beta})-\Lambda(\alpha_j-\mathbf{x}_i\boldsymbol{\beta})\right]^{1[y_i=j]},\quad \alpha_0=-\infty,\quad\alpha_{J+1}=+\infty
 $$
 
 ### Inmigración
@@ -672,6 +676,7 @@ summary(ordered_simple)
 Podemos obtener la probabilidad de que los predictores en los niveles de interés pertenezcan a cada uno de los niveles de la respuesta utilizando la formula del modelo ordinal.
 
 $$
+\begin{aligned}
 \textrm{P}(y=0|\textbf{x}) = \Lambda(\alpha_1-\textbf{x}\boldsymbol{\beta}) \\
 \textrm{P}(y=1|\textbf{x}) = \Lambda(\alpha_2-\textbf{x}\boldsymbol{\beta}) -\Lambda(\alpha_1-\textbf{x}\boldsymbol{\beta}) \\
 ... \\
@@ -679,6 +684,7 @@ $$
 ... \\
 \textrm{P}(y=J-1|\textbf{x}) = \Lambda(\alpha_J-\textbf{x}\boldsymbol{\beta}) -\Lambda(\alpha_{J-1}-\textbf{x}\boldsymbol{\beta}) \\
 \textrm{P}(y=J|\textbf{x}) = 1 - \Lambda(\alpha_J-\textbf{x}\boldsymbol{\beta})
+\end{aligned}
 $$
 
 ```{r}
@@ -715,9 +721,11 @@ print(probs)
 ### Efectos parciales para variables continuas
 
 Al igual que en los modelos multinomiales, el efecto parcial de los predictores sobre la respuesta no está determinado de forma inambigua por el signo del coeficiente correspondiente. $$
+\begin{aligned}
 \frac{\partial \textrm{P}(y=0|\textbf{x})}{\partial x_k} = -\beta_k \lambda(\alpha_{1}-\textbf{x}\boldsymbol{\beta}) \\
-\frac{\partial \textrm{P}(y=j|\textbf{x})}{\partial x_k} = \beta_k[\lambda(\alpha_{j-1}-\textbf{x}\boldsymbol{\beta}) - \lambda(\alpha_{j}-\textbf{x}\boldsymbol{\beta})], \space 0<j <J \\
+\frac{\partial \textrm{P}(y=j|\textbf{x})}{\partial x_k} = \beta_k[\lambda(\alpha_j-\textbf{x}\boldsymbol{\beta}) - \lambda(\alpha_{j+1}-\textbf{x}\boldsymbol{\beta})], \quad 0<j <J \\
 \frac{\partial \textrm{P}(y=J|\textbf{x})}{\partial x_k} = \beta_k \lambda(\alpha_{J}-\textbf{x}\boldsymbol{\beta}) \\
+\end{aligned}
 $$
 
 **1)** Estimar los efectos parciales para el nivel mínimo de la variable izquierda. Asumir que izquierda es una variable continua.
@@ -799,9 +807,9 @@ Pasos a seguir:
 
 -   Crear nuevo data frame llamado "cep_uno" sumando 1 a la columna izquierda de "cep_cero".
 
--   Predecir probabilidades de cep_cero en base multinomial_multiple con la formula predict(). Asignar a probs_cero.
+-   Predecir probabilidades de cep_cero en base ordered_multiple con la formula predict(). Asignar a probs_cero.
 
--   Predecir probabilidades de cep_uno en base multinomial_multiple con la formula predict(). Asignar a probs_uno.
+-   Predecir probabilidades de cep_uno en base ordered_multiple con la formula predict(). Asignar a probs_uno.
 
 -   Tomar resta de probs_uno y probs_cero.
 
@@ -832,9 +840,9 @@ Pasos a seguir:
 
 -   Crear nuevo data frame llamado "cep_uno" donde todos los valores de urbano sean 1.
 
--   Predecir probabilidades de cep_cero en base multinomial_multiple con la formula predict(). Asignar a "probs_cero".
+-   Predecir probabilidades de cep_cero en base ordered_multiple con la formula predict(). Asignar a "probs_cero".
 
--   Predecir probabilidades de cep_uno en base multinomial_multiple con la formula predict(). Asignar a "probs_uno".
+-   Predecir probabilidades de cep_uno en base ordered_multiple con la formula predict(). Asignar a "probs_uno".
 
 -   Tomar resta de probs_uno y probs_cero.
 
@@ -865,13 +873,13 @@ print(APE_urbano)
 
 partial_effects <- matrix(nrow=9, ncol=5)
 
-for (i in min(cep$izquierda):max(cep$izquierda)) {
+for (i in min(cep$izquierda):(max(cep$izquierda)-1)) {
   
   probs <- predict(ordered_multiple, newdata=data.frame(izquierda=i, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
 
   probs_2 <- predict(ordered_multiple, newdata=data.frame(izquierda=i+1, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
 
-  partial_effects[i,] <-  probs_2 - probs
+  partial_effects[i+1,] <-  probs_2 - probs
   
 }
 
@@ -891,17 +899,17 @@ ggplot(data = partial_effects, aes(x=izquierda, y=efecto, color=respuesta)) +
 
 ```{r}
 
-probabilities <- matrix(nrow=9, ncol=5)
+probabilities <- matrix(nrow=10, ncol=5)
 
 for (i in min(cep$izquierda):max(cep$izquierda)) {
   
   probs <- predict(ordered_multiple, newdata=data.frame(izquierda=i, edad_18=mean(cep$edad_18), urbano=mean(cep$urbano), escolaridad=mean(cep$escolaridad), mujer=mean(cep$mujer)), type="probs")
 
-  probabilities[i,] <-  probs
+  probabilities[i+1,] <-  probs
   
 }
 
-probabilities <- data.frame(probabilities = c(probabilities[,1], probabilities[,2], probabilities[,3], probabilities[,4], probabilities[,5]), izquierda=rep(0:8, times=5), respuesta=rep(c("0 - Muy en desacuerdo", "1 - En desacuerdo", "2 - Ni de acuerdo ni en desacuerdo", "3 - De acuerdo", "4 - Muy de acuerdo"), each=9))
+probabilities <- data.frame(probabilities = c(probabilities[,1], probabilities[,2], probabilities[,3], probabilities[,4], probabilities[,5]), izquierda=rep(0:9, times=5), respuesta=rep(c("0 - Muy en desacuerdo", "1 - En desacuerdo", "2 - Ni de acuerdo ni en desacuerdo", "3 - De acuerdo", "4 - Muy de acuerdo"), each=10))
 
 ggplot(data = probabilities, aes(x=izquierda, y=probabilities, color=respuesta)) +
   geom_line(linewidth=1.5)+

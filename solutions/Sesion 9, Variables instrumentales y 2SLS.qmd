@@ -121,7 +121,7 @@ Digamos que creemos que la educación de los padres podría ser un buen instrume
 
 ### Etapa 1: Modelo en forma reducida
 
-Podemos, por lo tanto, escribir una ecuación a la cual llamaremos la forma reducida para educación. Esta es la primera etapa de nuestra estimación. Ajustamos una regresión de la variable endógena contra todas las variables de nuestro modelo principal, incluyendo además los instrumentos.
+Podemos, por lo tanto, escribir una ecuación a la cual llamaremos la forma reducida para educación. Esta es la primera etapa de nuestra estimación. Ajustamos una regresión de la variable endógena contra las variables exógenas de nuestro modelo principal y los instrumentos adicionales.
 
 $$
 educ = \pi_0 + \pi_1exper + \pi_2 meduc + \pi_3 feduc + v_2
@@ -132,7 +132,7 @@ $$
 educ = educ^* + v_2
 $$
 
-Si al menos uno de los coeficientes de nuestros instrumentos es significativo para educ $(\pi_2 \neq 0 \space| \space \pi_3 \neq 0)$, diremos que se cumple el criterio de relevancia y que el modelo esta **indentificado**. Para testear esto de forma rigurosa deberíamos hacer una prueba de exlusión de significancia conjunta (prueba F, donde buscamos un estadístico F mayor o igual a 10 para descartar instrumentos débiles). Por simplicidad, en este caso nos conformaremos con la prueba t de significancia individual.
+Si al menos uno de los coeficientes de nuestros instrumentos es significativo para educ $(\pi_2 \neq 0 \quad\text{o}\quad \pi_3 \neq 0)$, diremos que se cumple el criterio de relevancia y que el modelo esta **indentificado**. Para testear esto de forma rigurosa deberíamos hacer una prueba de exlusión de significancia conjunta (prueba F, donde un estadístico F mayor o igual a 10 es una regla orientativa, no una garantía de ausencia de instrumentos débiles). Por simplicidad, en este caso nos conformaremos con la prueba t de significancia individual.
 
 **1)** Ajustar modelo de forma reducida para educación. Asignar a "modelo_reducido". Imprimir summary() **(1 punto)**.
 
@@ -154,7 +154,7 @@ Con la forma reducida de educación, podemos descomponer la endogeneidad de nues
 educ = educ^* + v_2
 $$
 
-Bajo el supuesto de exogeneidad de nuestros instrumentos, los valores ajustados de la regresión en forma reducida $\hat{educ} \space (educ^*)$ son una porción de educación que no está correlacionada $abil$. Por otra parte, los residuos de la forma reducida $\hat{v_2} \space (v_2)$ son una porción de educación que si esta correlacionada con $abil$. Para eliminar el sesgo de nuestra variable de interés y enviarlo al error del modelo principal $(u)$, estimamos la segunda etapa de la regresión contra los valores ajustados de la forma reducida. De esta forma, obtenemos los estimadores IV para nuestra regresión. Matemáticamente, reemplazamos la variable endógena por su forma reducida en la ecuación sesgada. Comenzamos con:
+Bajo el supuesto de exogeneidad de nuestros instrumentos, los valores ajustados de la regresión en forma reducida $\hat{educ} \quad (educ^*)$ son una porción de educación que no está correlacionada $abil$. Por otra parte, los residuos de la forma reducida $\hat{v_2} \quad (v_2)$ son una porción de educación que si esta correlacionada con $abil$. Para eliminar el sesgo de nuestra variable de interés y enviarlo al error del modelo principal $(u)$, estimamos la segunda etapa de la regresión contra los valores ajustados de la forma reducida. De esta forma, obtenemos los estimadores IV para nuestra regresión. Matemáticamente, reemplazamos la variable endógena por su forma reducida en la ecuación sesgada. Comenzamos con:
 
 $$
 log(wage) = \beta_0 + \beta_1educ + \beta_2exper + u
@@ -213,7 +213,7 @@ modelo_iv_malo <- lm(lwage ~ educ_hat + exper, data=wage2)
 
 Los coeficientes que obtendremos de este modelo son los correctos, pero los errores estándar no son válidos, ya que no estamos agregando el segundo componente al error compuesto. No es recomendable estimar la segunda etapa de forma manual.
 
-**2)** Volver a estimar el modelo 2SLS con la función ivreg() del paquete ivreg. La sintáxis para ivreg() corresponde a $y \sim x_1 + x_2 +...+ x_k \space | \space z_1 + z_2 + ...+z_h$, donde las $\textbf{x}$ corresponden a todas las variables del modelo original, y las $\textbf{z}$ corresponden a las variables exógenas y los instrumentos adicionales. Asignar a "modelo_iv" **(1 punto)**.
+**2)** Volver a estimar el modelo 2SLS con la función ivreg() del paquete ivreg. La sintáxis para ivreg() corresponde a $y \sim x_1 + x_2 +...+ x_k \quad | \quad z_1 + z_2 + ...+z_h$, donde las $\textbf{x}$ corresponden a todas las variables del modelo original, y las $\textbf{z}$ corresponden a las variables exógenas y los instrumentos adicionales. Asignar a "modelo_iv" **(1 punto)**.
 
 ```{r}
 
@@ -286,7 +286,7 @@ stargazer(sample_sesgado, sample_proxy, sample_iv_malo, sample_iv, type="text")
 
 ### Intention-to-treat
 
-Cuando la selección a un tratamiento es exógena, pero la decisión de participar no lo es, el uso de variables instrumentales nos puede entregar una estimación del **efecto de ofrecer el tratamiento**.
+Cuando la selección a un tratamiento es exógena, pero la decisión de participar no lo es, comparar por selección permite estimar el **efecto de ofrecer el tratamiento (ITT)**. Utilizar la selección como instrumento para la participación permite estimar el **efecto local del tratamiento en quienes participan por haber sido seleccionados (LATE)**, bajo los supuestos de relevancia, exclusión, exogeneidad y monotonicidad.
 
 #### Voucher
 
