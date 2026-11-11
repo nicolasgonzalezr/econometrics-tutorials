@@ -1,5 +1,6 @@
 ---
 title: "Sesion 3, Regresion multiple & heterocedasticidad"
+author: "Nicolás González Raposo"
 format: docx
 ---
 

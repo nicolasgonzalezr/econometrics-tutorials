@@ -1,5 +1,6 @@
 ---
 title: "Sesión 8, Diferencias en diferencias"
+author: "Nicolás González Raposo"
 format: docx
 editor_options: 
   chunk_output_type: inline

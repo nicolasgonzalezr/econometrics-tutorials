@@ -1,5 +1,6 @@
 ---
 title: "Sesion 2, Modelo lineal simple"
+author: "Nicolás González Raposo"
 format: docx
 ---
 

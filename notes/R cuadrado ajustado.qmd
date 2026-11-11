@@ -1,5 +1,6 @@
 ---
 title: "R cuadrado ajustado"
+author: "Nicolás González Raposo"
 format: docx
 editor_options: 
   chunk_output_type: inline

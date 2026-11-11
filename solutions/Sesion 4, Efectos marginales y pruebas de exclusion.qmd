@@ -1,5 +1,6 @@
 ---
 title: "Sesion 4, Efectos marginales y pruebas de exclusion"
+author: "Nicolás González Raposo"
 format: docx
 ---
 

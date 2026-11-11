@@ -1,5 +1,6 @@
 ---
 title: "Sesión 9, Variables instrumentales y 2SLS"
+author: "Nicolás González Raposo"
 format: docx
 editor_options: 
   chunk_output_type: inline

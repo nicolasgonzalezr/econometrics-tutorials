@@ -1,5 +1,6 @@
 ---
 title: "Ayudantias Teoria Econometrica"
+author: "Nicolás González Raposo"
 ---
 
 ## Sesión 1, Introducción a R

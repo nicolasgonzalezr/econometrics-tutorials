@@ -1,5 +1,6 @@
 ---
 title: "Sesion 6, Modelos de variable dependiente binaria, logit y probit"
+author: "Nicolás González Raposo"
 format: docx
 editor_options: 
   chunk_output_type: inline

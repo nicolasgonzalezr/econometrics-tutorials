@@ -1,5 +1,6 @@
 ---
 title: "Sesión 7, Modelos de variable dependiente categórica, multinomial y ordered logit"
+author: "Nicolás González Raposo"
 format: docx
 editor_options: 
   chunk_output_type: inline

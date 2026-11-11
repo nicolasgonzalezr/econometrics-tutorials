@@ -1,5 +1,6 @@
 ---
 title: "Sesion 5, Interacciones, intervalos de confianza y herramientas gráficas"
+author: "Nicolás González Raposo"
 format: docx
 ---
 
