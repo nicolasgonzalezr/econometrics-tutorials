@@ -7,8 +7,7 @@ Interactive Quarto tutorials for an introductory econometrics course for spanish
 | [exercises](exercises/) | Worksheets to complete in R and Quarto. |
 | [solutions](solutions/) | Corresponding worked examples. |
 | [notes](notes/) | Supplementary note on adjusted R squared. |
-| [data](data/) | CEP 90 data and dictionary, and the simulated breakfast dataset. |
-| [images](images/) | Original formula images. |
+| [data](data/) | CEP 90 data and dictionary, and the simulated dataset. |
 
 Requires R and [Quarto](https://quarto.org/). Install the R packages once:
 
